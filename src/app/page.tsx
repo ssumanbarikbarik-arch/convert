@@ -12,7 +12,7 @@ export default function Home() {
     <div className="container mx-auto py-12 px-4 md:px-6">
       <section className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4 font-headline">
-          Tools
+          The All-in-One File Conversion Tools
         </h1>
         <p className="max-w-3xl mx-auto text-muted-foreground md:text-xl">
           Swiftly convert, merge, split, and compress your files with our suite
