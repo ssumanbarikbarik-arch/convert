@@ -140,15 +140,18 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     setProgress(0);
     setError(null);
 
-    const progressInterval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 95) {
-          clearInterval(progressInterval);
-          return prev;
-        }
-        return prev + 5;
-      });
-    }, 200);
+    let progressInterval: NodeJS.Timeout | undefined;
+    if (!isImageToUrlTool) {
+      progressInterval = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 95) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          return prev + 5;
+        });
+      }, 200);
+    }
 
     try {
       if (tool.slug === 'compress-pdf' && files.length > 0) {
@@ -271,8 +274,6 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
         await uploadBytes(imageRef, file);
         const downloadUrl = await getDownloadURL(imageRef);
 
-        clearInterval(progressInterval);
-        setProgress(100);
         setConversionState('success');
         setResult({
           url: downloadUrl,
@@ -301,7 +302,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
         });
       }
     } catch (e) {
-      clearInterval(progressInterval);
+      if (progressInterval) clearInterval(progressInterval);
       setConversionState('error');
       const errorMessage =
         e instanceof Error ? e.message : 'An unknown error occurred.';
@@ -422,8 +423,12 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
       <CardContent className="p-6 text-center space-y-4">
         <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary" />
         <p className="font-semibold">Processing your file(s)...</p>
-        <Progress value={progress} className="w-full" />
-        <p className="text-sm text-muted-foreground">{progress}% complete</p>
+        {!isImageToUrlTool && (
+          <>
+            <Progress value={progress} className="w-full" />
+            <p className="text-sm text-muted-foreground">{progress}% complete</p>
+          </>
+        )}
       </CardContent>
     </Card>
   );
