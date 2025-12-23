@@ -8,6 +8,7 @@ import {
   BookText,
   ImageUp,
   FileJson,
+  FileUp,
 } from 'lucide-react';
 import { ScanText } from 'lucide-react';
 
@@ -30,7 +31,8 @@ export const iconMap = {
   BookText,
   ImageUp,
   FileJson,
-  ScanText
+  ScanText,
+  FileUp,
 };
 
 export const tools: Tool[] = [
@@ -61,13 +63,13 @@ export const tools: Tool[] = [
     color: '#eab308',
     accept: 'application/pdf',
   },
-  {
-    slug: 'pdf-to-text',
-    name: 'PDF to Text',
+    {
+    slug: 'pdf-to-word',
+    name: 'PDF to Word',
     description: 'Convert a PDF to an editable text file.',
-    iconName: 'FileText',
-    icon: FileText,
-    color: '#84cc16',
+    iconName: 'FileUp',
+    icon: FileUp,
+    color: '#22c55e',
     accept: 'application/pdf',
   },
   {
