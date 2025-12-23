@@ -160,12 +160,22 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
         });
 
       } else {
-        await new Promise(resolve => setTimeout(resolve, 4000));
+        await new Promise(resolve => setTimeout(resolve, 1000));
         clearInterval(progressInterval);
         setProgress(100);
         setConversionState('success');
+        
+        // Create a dummy PDF for placeholder actions
+        const pdfLib = await import('pdf-lib');
+        const pdfDoc = await pdfLib.PDFDocument.create();
+        const page = pdfDoc.addPage();
+        page.drawText(`This is a placeholder for ${tool.name}.`);
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const resultUrl = URL.createObjectURL(blob);
+        
         setResult({
-          url: '#',
+          url: resultUrl,
           name: isUrlTool
             ? 'converted-page.pdf'
             : `converted-${files[0]?.name || 'file'}.pdf`,
