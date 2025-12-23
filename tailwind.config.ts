@@ -18,9 +18,8 @@ const config: Config = {
     extend: {
       fontFamily: {
         body: ['Roboto', 'sans-serif'],
-        headline: ['Roboto', 'sans-serif'],
+        headline: ['Roboto Slab', 'serif'],
         logo: ['Roboto Slab', 'serif'],
-        code: ['monospace'],
       },
       colors: {
         border: 'hsl(var(--border))',
