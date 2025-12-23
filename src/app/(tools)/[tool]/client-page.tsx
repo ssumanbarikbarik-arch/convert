@@ -192,8 +192,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
         });
       } else if (isPdfToWordTool && files.length > 0) {
         const pdfjs = await import('pdfjs-dist/build/pdf');
-        const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.entry');
-        pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+        pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
 
         const arrayBuffer = await files[0].arrayBuffer();
         const pdf = await pdfjs.getDocument(arrayBuffer).promise;
