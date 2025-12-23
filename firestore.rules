@@ -1,0 +1,100 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict, multi-tiered security model. The primary layer is user-ownership, where all user-generated data (profiles, conversion history) is stored within a private data tree accessible only to that user. An additional layer provides admin-level read access across all user data for support and moderation, based on a separate, securely managed roles collection.
+ *
+ * Data Structure: The data is hierarchically organized under the `/users/{userId}` path. A user's profile is at the root of this path, and their conversion history is stored in a nested subcollection (`/users/{userId}/conversions`). Administrator roles are managed in a separate top-level collection, `/roles_admin/{userId}`, to decouple permissions from user profile data.
+ *
+ * Key Security Decisions:
+ * - User data is private by default. A user can only access documents within their own `/users/{userId}` path.
+ * - Listing users is prohibited for non-admins to protect user privacy and prevent data scraping.
+ * - Administrator access is read-only for user data. This is a critical safety measure to prevent accidental or malicious data modification by privileged accounts.
+ * - The `/roles_admin` collection is immutable from the client-side. Roles must be granted or revoked by a trusted server-side process, preventing any user (including other admins) from escalating privileges through the client API.
+ * - Authorization logic avoids `get()` calls by leveraging path-based security and a dedicated roles collection, ensuring rules are fast, scalable, and not subject to cross-document read limitations.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper Functions
+    
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the authenticated user is the owner of a document by comparing
+     * their UID against the document's path ID.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    /**
+     * Checks if a user is an administrator. Admin status is determined by the
+     * existence of a document in the `/roles_admin` collection. This is more
+     * secure than relying on a field in a user-modifiable profile.
+     */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    /**
+     * Ensures an update or delete operation targets an existing document
+     * and that the requesting user is the owner. Prevents operations on
+     * non-existent paths.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Rules for a user's profile document.
+     * @path /users/{userId}
+     * @allow (create) A new user creating their own profile document: `create /users/user_abc` where auth.uid is 'user_abc'.
+     * @allow (get) An admin reading any user's profile: `get /users/user_def` where auth.uid is 'admin_123' and an admin role exists.
+     * @deny (list) A non-admin user trying to list all user profiles: `list /users`.
+     * @deny (update) A user trying to change another user's profile: `update /users/user_def` where auth.uid is 'user_abc'.
+     * @principle Restricts access to a user's own data tree and provides admin read-only oversight.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for a user's conversion history documents.
+     * @path /users/{userId}/conversions/{conversionId}
+     * @allow (create) A user creating a new conversion record for themselves: `create /users/user_abc/conversions/conv_123` where auth.uid is 'user_abc'.
+     * @allow (get) An admin reading a specific user's conversion record: `get /users/user_def/conversions/conv_456` where auth.uid is 'admin_123'.
+     * @deny (list) A user trying to list another user's conversions: `list /users/user_def/conversions` where auth.uid is 'user_abc'.
+     * @deny (delete) A user trying to delete another user's conversion history: `delete /users/user_def/conversions/conv_456` where auth.uid is 'user_abc'.
+     * @principle Enforces inherited ownership from the parent path, ensuring a user's subcollections remain private.
+     */
+    match /users/{userId}/conversions/{conversionId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Manages administrator roles. This collection is read-only from the client.
+     * @path /roles_admin/{userId}
+     * @allow (get) An admin checking if another user has admin privileges: `get /roles_admin/user_abc` where auth.uid is 'admin_123'.
+     * @deny (get) A non-admin user trying to check for roles: `get /roles_admin/user_abc`.
+     * @deny (create, update, delete) Any client trying to modify roles: `create /roles_admin/new_admin`.
+     * @principle Secures role management by making it read-only from the client, forcing modifications to occur through a trusted server environment.
+     */
+    match /roles_admin/{userId} {
+      allow get, list: if isAdmin();
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}

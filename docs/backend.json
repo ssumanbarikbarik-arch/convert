@@ -1,0 +1,147 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the SwiftConvert application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "username": {
+          "type": "string",
+          "description": "Username of the user."
+        },
+        "isAdmin": {
+          "type": "boolean",
+          "description": "Indicates if the user has administrator privileges."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "username"
+      ]
+    },
+    "Conversion": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Conversion",
+      "type": "object",
+      "description": "Represents a file conversion performed by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the conversion."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Conversion)"
+        },
+        "inputFilename": {
+          "type": "string",
+          "description": "Name of the input file."
+        },
+        "outputFilename": {
+          "type": "string",
+          "description": "Name of the output file after conversion."
+        },
+        "inputFileType": {
+          "type": "string",
+          "description": "Type of the input file (e.g., 'jpg', 'pdf')."
+        },
+        "outputFileType": {
+          "type": "string",
+          "description": "Type of the output file (e.g., 'pdf', 'jpg')."
+        },
+        "conversionDate": {
+          "type": "string",
+          "description": "Date and time when the conversion was performed.",
+          "format": "date-time"
+        },
+        "inputFileSize": {
+          "type": "number",
+          "description": "Size of the input file in bytes."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "inputFilename",
+        "outputFilename",
+        "inputFileType",
+        "outputFileType",
+        "conversionDate"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information. Path-based ownership ensures only the user can access their own profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/conversions/{conversionId}",
+        "definition": {
+          "entityName": "Conversion",
+          "schema": {
+            "$ref": "#/backend/entities/Conversion"
+          },
+          "description": "Stores conversion history for each user. Path-based ownership ensures only the user can access their own conversion data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "conversionId",
+              "description": "The unique identifier for the conversion."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "adminRole",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Collection to store admin roles. Existence of a document indicates admin privileges.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who has admin privileges."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "This Firestore structure prioritizes authorization independence and simplifies security rules. User data is stored in a private collection (`/users/{userId}`) ensuring only the user can access their information, while conversions are stored in a subcollection (`/users/{userId}/conversions/{conversionId}`). This hierarchical structure inherently secures the conversion data to the respective user. The structure uses path-based ownership for User data and their Conversions. To support the 'Admin Panel' requirement, a separate collection `/roles_admin/{userId}` stores admin roles, checking for the existence of a document instead of its content, enhancing security and simplicity. The structure segregation and path-based ownership ensures list operations are secure by default (QAPs) and access control is straightforward, enhancing debuggability. Crucially, this design avoids any `get()` calls in security rules, ensuring authorization independence and atomicity of operations."
+  }
+}
