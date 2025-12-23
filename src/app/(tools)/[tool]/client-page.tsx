@@ -63,7 +63,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
 
   const isUrlTool = tool.slug === 'url-to-pdf';
   const isMultiFile = tool.slug === 'merge-pdf';
-  const isImageToUrlTool = tool.slug === 'image-to-url';
+  const isImageToUrlTool = tool.slug === 'host-image-to-url';
   const isSplitPdfTool = tool.slug === 'split-pdf';
 
   const onFileChange = (newFiles: File[]) => {
@@ -240,6 +240,31 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
           name: `split-${files[0].name}`,
         });
 
+      } else if (isMultiFile && files.length > 0) {
+        const pdfLib = await import('pdf-lib');
+        const mergedPdf = await pdfLib.PDFDocument.create();
+        
+        for (const file of files) {
+          const pdfBytes = await file.arrayBuffer();
+          const pdf = await pdfLib.PDFDocument.load(pdfBytes);
+          const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+          copiedPages.forEach((page) => {
+            mergedPdf.addPage(page);
+          });
+        }
+        
+        const mergedPdfBytes = await mergedPdf.save();
+        const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+        const resultUrl = URL.createObjectURL(blob);
+
+        clearInterval(progressInterval);
+        setProgress(100);
+        setConversionState('success');
+
+        setResult({
+          url: resultUrl,
+          name: 'merged.pdf',
+        });
       } else if (
         (tool.slug === 'jpg-to-pdf' || tool.slug === 'png-to-pdf') &&
         files.length > 0
@@ -481,6 +506,11 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
                   </p>
                 </div>
               )}
+              {isMultiFile && files.length > 0 && (
+                <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
+                  Add More Files
+                </Button>
+              )}
               <Button className="w-full" onClick={handleConvert}>
                 Convert Now
               </Button>
@@ -616,3 +646,5 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
       return renderIdleState();
   }
 }
+
+    
