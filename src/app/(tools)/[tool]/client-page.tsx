@@ -22,6 +22,7 @@ import {
   RotateCcw,
   X,
   Loader2,
+  Copy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +32,7 @@ import { useToast } from '@/hooks/use-toast';
 import { intelligentPdfCompression } from '@/ai/flows/intelligent-pdf-compression';
 import { cn } from '@/lib/utils';
 import { summarizePdf } from '@/ai/flows/pdf-summarization';
+import { Textarea } from '@/components/ui/textarea';
 
 type ConversionState = 'idle' | 'processing' | 'success' | 'error';
 type ClientTool = Omit<Tool, 'icon'> & { iconName: string };
@@ -46,6 +48,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     url: string;
     name: string;
     analysis?: string;
+    isDataUrl?: boolean;
   } | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -53,6 +56,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
 
   const isUrlTool = tool.slug === 'url-to-pdf';
   const isMultiFile = tool.slug === 'merge-pdf';
+  const isImageToUrlTool = tool.slug === 'image-to-url';
 
   const onFileChange = (newFiles: File[]) => {
     if (isMultiFile) {
@@ -251,6 +255,16 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
           name: `converted-${files[0].name.replace(/\.pdf$/, `.${fileExtension}`)}`,
         });
 
+      } else if (isImageToUrlTool && files.length > 0) {
+        const dataUrl = await fileToDataUri(files[0]);
+        clearInterval(progressInterval);
+        setProgress(100);
+        setConversionState('success');
+        setResult({
+          url: dataUrl,
+          name: `data-url-for-${files[0].name}.txt`,
+          isDataUrl: true,
+        });
       } else {
         await new Promise(resolve => setTimeout(resolve, 1000));
         clearInterval(progressInterval);
@@ -400,49 +414,86 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     </Card>
   );
 
-  const renderSuccessState = () => (
-    <Card>
-      <CardContent className="p-6 text-center space-y-4">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-          <svg
-            className="w-8 h-8 text-green-600"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-        </div>
-        <h2 className="text-2xl font-bold">Conversion Successful!</h2>
-        <p className="text-muted-foreground">Your file is ready for download.</p>
-        {result?.analysis && (
-          <div className="text-left bg-muted p-4 rounded-lg">
-            <h3 className="font-semibold mb-2">Analysis Summary</h3>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-              {result.analysis}
-            </p>
+  const renderSuccessState = () => {
+    if (result?.isDataUrl) {
+      return (
+        <Card>
+          <CardContent className="p-6 space-y-4">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-center">Conversion Successful!</h2>
+              <p className="text-muted-foreground text-center">Your Data URL is ready.</p>
+            </div>
+            <div className="relative">
+              <Textarea
+                readOnly
+                value={result.url}
+                className="h-48 resize-none pr-12"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2"
+                onClick={() => {
+                  navigator.clipboard.writeText(result.url);
+                  toast({ title: 'Copied to clipboard!' });
+                }}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+             <Button variant="outline" size="lg" onClick={reset} className='w-full'>
+              <RotateCcw className="mr-2" />
+              Convert Another
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <Card>
+        <CardContent className="p-6 text-center space-y-4">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+            <svg
+              className="w-8 h-8 text-green-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
           </div>
-        )}
-        <div className="flex flex-wrap gap-4 justify-center">
-          <Button asChild size="lg">
-            <a href={result?.url} download={result?.name}>
-              <Download className="mr-2" />
-              Download File
-            </a>
-          </Button>
-          <Button variant="outline" size="lg" onClick={reset}>
-            <RotateCcw className="mr-2" />
-            Convert Another
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
+          <h2 className="text-2xl font-bold">Conversion Successful!</h2>
+          <p className="text-muted-foreground">Your file is ready for download.</p>
+          {result?.analysis && (
+            <div className="text-left bg-muted p-4 rounded-lg">
+              <h3 className="font-semibold mb-2">Analysis Summary</h3>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                {result.analysis}
+              </p>
+            </div>
+          )}
+          <div className="flex flex-wrap gap-4 justify-center">
+            <Button asChild size="lg">
+              <a href={result?.url} download={result?.name}>
+                <Download className="mr-2" />
+                Download File
+              </a>
+            </Button>
+            <Button variant="outline" size="lg" onClick={reset}>
+              <RotateCcw className="mr-2" />
+              Convert Another
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   const renderErrorState = () => (
     <Card>
