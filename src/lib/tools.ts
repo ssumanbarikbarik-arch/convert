@@ -7,7 +7,8 @@ import {
   Shrink,
   Link,
   type LucideIcon,
-  BookText
+  BookText,
+  ImageUp,
 } from 'lucide-react';
 
 export type Tool = {
@@ -28,7 +29,8 @@ export const iconMap = {
   FileSpreadsheet,
   FileImage,
   Link,
-  BookText
+  BookText,
+  ImageUp,
 };
 
 export const tools: Tool[] = [
@@ -86,7 +88,7 @@ export const tools: Tool[] = [
     color: '#c026d3',
     accept: 'application/pdf',
   },
-    {
+  {
     slug: 'pdf-to-png',
     name: 'PDF to PNG',
     description: 'Convert each PDF page into a PNG image.',
@@ -150,10 +152,10 @@ export const tools: Tool[] = [
   },
   {
     slug: 'image-to-url',
-    name: 'Image to URL',
+    name: 'Host Image to URL',
     description: 'Upload an image and get a shareable URL.',
-    iconName: 'Link',
-    icon: Link,
+    iconName: 'ImageUp',
+    icon: ImageUp,
     color: '#0891b2',
     accept: 'image/*',
   },
