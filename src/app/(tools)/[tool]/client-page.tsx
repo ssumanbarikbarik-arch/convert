@@ -394,8 +394,38 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
           url: resultUrl,
           name: `converted-${files[0].name.replace(/\.pdf$/, `.${fileExtension}`)}`,
         });
+      } else if (tool.slug === 'pdf-to-text' && files.length > 0) {
+        const pdfjsLib = await import('pdfjs-dist');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+          'pdfjs-dist/build/pdf.worker.min.mjs',
+          import.meta.url,
+        ).toString();
 
-      } else if (isImageToUrlTool && files.length > 0) {
+        const fileBytes = await files[0].arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument({ data: fileBytes });
+        const pdf = await loadingTask.promise;
+        
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map(item => (item as any).str).join(' ');
+          fullText += pageText + '\n\n';
+        }
+        
+        const blob = new Blob([fullText], { type: 'text/plain' });
+        const resultUrl = URL.createObjectURL(blob);
+        
+        clearInterval(progressInterval);
+        setProgress(100);
+        setConversionState('success');
+        
+        setResult({
+          url: resultUrl,
+          name: `converted-${files[0].name.replace(/\.pdf$/, '.txt')}`,
+        });
+      }
+      else if (isImageToUrlTool && files.length > 0) {
         if (!firebaseApp) {
           throw new Error('Firebase not initialized');
         }

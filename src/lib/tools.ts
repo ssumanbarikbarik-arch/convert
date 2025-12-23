@@ -7,6 +7,7 @@ import {
   type LucideIcon,
   BookText,
   ImageUp,
+  ScanText,
 } from 'lucide-react';
 
 export type Tool = {
@@ -27,6 +28,7 @@ export const iconMap = {
   FileImage,
   BookText,
   ImageUp,
+  ScanText,
 };
 
 export const tools: Tool[] = [
@@ -118,6 +120,24 @@ export const tools: Tool[] = [
     iconName: 'ImageUp',
     icon: ImageUp,
     color: '#0891b2',
+    accept: 'image/*',
+  },
+  {
+    slug: 'pdf-to-text',
+    name: 'PDF to Text',
+    description: 'Extract text from any PDF document.',
+    iconName: 'FileText',
+    icon: FileText,
+    color: '#3b82f6',
+    accept: 'application/pdf',
+  },
+  {
+    slug: 'image-to-text',
+    name: 'Image to Text',
+    description: 'Extract text from any image using OCR.',
+    iconName: 'ScanText',
+    icon: ScanText,
+    color: '#22c55e',
     accept: 'image/*',
   },
 ];
