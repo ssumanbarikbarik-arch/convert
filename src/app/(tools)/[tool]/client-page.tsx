@@ -203,7 +203,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
           textContent += text.items.map(item => ('str' in item ? item.str : '')).join(' ') + '\n\n';
         }
 
-        const blob = new Blob([textContent], { type: 'text/plain' });
+        const blob = new Blob([textContent], { type: 'application/msword' });
         const resultUrl = URL.createObjectURL(blob);
 
         if (progressInterval) clearInterval(progressInterval);
@@ -211,7 +211,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
         setConversionState('success');
         setResult({
           url: resultUrl,
-          name: `${files[0].name.replace(/\.pdf$/, '')}.txt`,
+          name: `${files[0].name.replace(/\.pdf$/, '')}.doc`,
         });
 
       } else if (isImageCompressTool && files.length > 0) {
