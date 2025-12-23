@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { summarizePdf } from '@/ai/flows/pdf-summarization';
 
 type ConversionState = 'idle' | 'processing' | 'success' | 'error';
-type ClientTool = Omit<Tool, 'icon'>;
+type ClientTool = Omit<Tool, 'icon'> & { iconName: string };
 
 export function ToolClientPage({ tool }: { tool: ClientTool }) {
   const [files, setFiles] = useState<File[]>([]);
