@@ -198,14 +198,16 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
         (tool.slug === 'pdf-to-jpg' || tool.slug === 'pdf-to-png') &&
         files.length > 0
       ) {
-        // Dynamically import pdf.js
-        const pdfjsLib = await import('pdfjs-dist/build/pdf');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+        const pdfjsLib = await import('pdfjs-dist');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+          'pdfjs-dist/build/pdf.worker.min.mjs',
+          import.meta.url,
+        ).toString();
 
         const fileBytes = await files[0].arrayBuffer();
         const pdf = await pdfjsLib.getDocument(fileBytes).promise;
         const page = await pdf.getPage(1); // Get the first page
-        const viewport = page.getViewport({ scale: 1.5 });
+        const viewport = page.getViewport({ scale: 2.0 });
 
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
@@ -456,3 +458,5 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
       return renderIdleState();
   }
 }
+
+    
