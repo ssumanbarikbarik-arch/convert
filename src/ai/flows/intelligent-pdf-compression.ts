@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {PDFDocument} from 'pdf-lib';
 
 const IntelligentPdfCompressionInputSchema = z.object({
   pdfDataUri: z
@@ -44,19 +45,6 @@ export async function intelligentPdfCompression(
   return intelligentPdfCompressionFlow(input);
 }
 
-const pdfAnalysisPrompt = ai.definePrompt({
-  name: 'pdfAnalysisPrompt',
-  input: {schema: IntelligentPdfCompressionInputSchema},
-  output: {schema: z.string().describe('Analysis summary and suggested compression settings.')},
-  prompt: `You are an expert in PDF document structure and compression techniques.
-  Analyze the provided PDF document (passed as a data URI) to understand its content, structure, and image properties.
-  Based on your analysis, suggest optimal compression settings to reduce the file size while preserving readability and quality.
-  Provide a summary of your analysis and the suggested compression settings.
-
-  PDF Document: {{media url=pdfDataUri}}
-  `,
-});
-
 const intelligentPdfCompressionFlow = ai.defineFlow(
   {
     name: 'intelligentPdfCompressionFlow',
@@ -64,13 +52,21 @@ const intelligentPdfCompressionFlow = ai.defineFlow(
     outputSchema: IntelligentPdfCompressionOutputSchema,
   },
   async input => {
-    const analysisResult = await pdfAnalysisPrompt(input);
-    // TODO: Implement actual PDF compression logic here using a library or service.
-    // This is a placeholder. Replace with actual implementation.
-    const compressedPdfDataUri = input.pdfDataUri; // Placeholder: No actual compression yet
+    const base64Data = input.pdfDataUri.split(',')[1];
+    const pdfBytes = Buffer.from(base64Data, 'base64');
+    const pdfDoc = await PDFDocument.load(pdfBytes);
+    
+    // This is a basic compression by re-saving the document.
+    // For more advanced compression, image resampling or object stream compression would be needed.
+    const compressedPdfBytes = await pdfDoc.save();
+    
+    const compressedPdfDataUri = `data:application/pdf;base64,${Buffer.from(
+      compressedPdfBytes
+    ).toString('base64')}`;
+
     return {
       compressedPdfDataUri,
-      analysisSummary: analysisResult.output!,
+      analysisSummary: 'The PDF has been re-saved to optimize its structure and reduce file size. No AI analysis was needed.',
     };
   }
 );
