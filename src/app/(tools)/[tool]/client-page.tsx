@@ -13,7 +13,7 @@ if (typeof Promise.withResolvers !== 'function') {
   };
 }
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import type { Tool } from '@/lib/tools';
 import {
   UploadCloud,
@@ -37,6 +37,7 @@ import { useFirebase } from '@/firebase';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Label } from '@/components/ui/label';
 import JSZip from 'jszip';
+import { Slider } from '@/components/ui/slider';
 
 
 type ConversionState = 'idle' | 'processing' | 'success' | 'error';
@@ -46,6 +47,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
   const [files, setFiles] = useState<File[]>([]);
   const [url, setUrl] = useState('');
   const [pageRange, setPageRange] = useState('');
+  const [compressionQuality, setCompressionQuality] = useState([70]);
   const [conversionState, setConversionState] =
     useState<ConversionState>('idle');
   const [progress, setProgress] = useState(0);
@@ -135,6 +137,13 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     });
   };
 
+  const isJpg = useMemo(() => {
+    if (isImageCompressTool && files.length > 0) {
+      return files[0].type === 'image/jpeg';
+    }
+    return false;
+  }, [files, isImageCompressTool]);
+
   const handleConvert = async () => {
     if (isUrlTool && !url) {
       setError('Please enter a URL.');
@@ -199,7 +208,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
             ctx.drawImage(image, 0, 0);
 
             // For JPG, quality can be adjusted. For PNG, it's lossless.
-            const quality = imageFile.type === 'image/jpeg' ? 0.7 : 1.0;
+            const quality = imageFile.type === 'image/jpeg' ? compressionQuality[0] / 100 : 1.0;
             const resultDataUrl = canvas.toDataURL(imageFile.type, quality);
             URL.revokeObjectURL(imageUrl);
             resolve(resultDataUrl);
@@ -444,6 +453,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     setFiles([]);
     setUrl('');
     setPageRange('');
+    setCompressionQuality([70]);
     setConversionState('idle');
     setProgress(0);
     setError(null);
@@ -544,6 +554,25 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
                   />
                    <p className="text-xs text-muted-foreground">
                     Enter page numbers and/or ranges separated by commas.
+                  </p>
+                </div>
+              )}
+              {isImageCompressTool && isJpg && (
+                <div className="grid gap-2 pt-2">
+                  <div className="flex justify-between items-center">
+                    <Label htmlFor="quality">Compression Quality</Label>
+                    <span className="text-sm font-medium text-muted-foreground">{compressionQuality[0]}%</span>
+                  </div>
+                  <Slider
+                    id="quality"
+                    min={10}
+                    max={100}
+                    step={10}
+                    value={compressionQuality}
+                    onValueChange={setCompressionQuality}
+                  />
+                   <p className="text-xs text-muted-foreground">
+                    Lower values result in smaller file sizes but lower quality.
                   </p>
                 </div>
               )}
