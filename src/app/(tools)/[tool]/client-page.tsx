@@ -194,6 +194,42 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
           url: resultUrl,
           name: `converted-${files[0].name.replace(/\.(jpg|jpeg|png)$/, '.pdf')}`,
         });
+      } else if (
+        (tool.slug === 'pdf-to-jpg' || tool.slug === 'pdf-to-png') &&
+        files.length > 0
+      ) {
+        // Dynamically import pdf.js
+        const pdfjsLib = await import('pdfjs-dist/build/pdf');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+
+        const fileBytes = await files[0].arrayBuffer();
+        const pdf = await pdfjsLib.getDocument(fileBytes).promise;
+        const page = await pdf.getPage(1); // Get the first page
+        const viewport = page.getViewport({ scale: 1.5 });
+
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        if (!context) {
+          throw new Error('Could not get canvas context');
+        }
+
+        await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+        const imageFormat = tool.slug === 'pdf-to-jpg' ? 'image/jpeg' : 'image/png';
+        const fileExtension = tool.slug === 'pdf-to-jpg' ? 'jpg' : 'png';
+        const resultUrl = canvas.toDataURL(imageFormat);
+
+        clearInterval(progressInterval);
+        setProgress(100);
+        setConversionState('success');
+        
+        setResult({
+          url: resultUrl,
+          name: `converted-${files[0].name.replace(/\.pdf$/, `.${fileExtension}`)}`,
+        });
 
       } else {
         await new Promise(resolve => setTimeout(resolve, 1000));
