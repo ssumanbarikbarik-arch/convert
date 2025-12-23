@@ -3,6 +3,9 @@
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -54,7 +57,15 @@ export default function ProfilePage() {
 
   return (
     <div className="container mx-auto py-12 px-4 md:px-6">
-      <Card className="max-w-2xl mx-auto">
+      <div className="relative mb-8">
+        <Button asChild variant="outline" className="absolute -top-4 left-0">
+          <Link href="/">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Home
+          </Link>
+        </Button>
+      </div>
+      <Card className="max-w-2xl mx-auto mt-8">
         <CardHeader>
           <div className="flex items-center space-x-4">
             <Avatar className="h-24 w-24">
