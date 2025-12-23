@@ -33,7 +33,7 @@ export function generateMetadata({
 }
 
 // We can't pass the icon component to the client component, so we pass the name.
-type ClientTool = Omit<Tool, 'icon'>;
+type ClientTool = Omit<Tool, 'icon'> & { iconName: string };
 
 export default function ToolPage({ params }: { params: { tool: string } }) {
   const tool = tools.find(t => t.slug === params.tool);
