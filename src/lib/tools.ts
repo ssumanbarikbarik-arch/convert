@@ -7,6 +7,7 @@ import {
   Shrink,
   Link,
   type LucideIcon,
+  BookText
 } from 'lucide-react';
 
 export type Tool = {
@@ -113,5 +114,13 @@ export const tools: Tool[] = [
     description: 'Convert any webpage into a PDF document.',
     icon: Link,
     color: '#64748b',
+  },
+  {
+    slug: 'summarize-pdf',
+    name: 'Summarize PDF',
+    description: 'Get a quick summary of any PDF document using AI.',
+    icon: BookText,
+    color: '#6d28d9',
+    accept: 'application/pdf',
   },
 ];

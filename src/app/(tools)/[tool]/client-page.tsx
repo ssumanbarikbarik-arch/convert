@@ -17,6 +17,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { intelligentPdfCompression } from '@/ai/flows/intelligent-pdf-compression';
 import { cn } from '@/lib/utils';
+import { summarizePdf } from '@/ai/flows/pdf-summarization';
 
 type ConversionState = 'idle' | 'processing' | 'success' | 'error';
 
@@ -140,6 +141,23 @@ export function ToolClientPage({ tool }: { tool: Tool }) {
           name: `compressed-${files[0].name}`,
           analysis: response.analysisSummary,
         });
+      } else if (tool.slug === 'summarize-pdf' && files.length > 0) {
+        const pdfDataUri = await fileToDataUri(files[0]);
+        const response = await summarizePdf({pdfDataUri});
+        
+        clearInterval(progressInterval);
+        setProgress(100);
+        setConversionState('success');
+        
+        const blob = new Blob([response.summary], { type: 'text/plain' });
+        const resultUrl = URL.createObjectURL(blob);
+
+        setResult({
+          url: resultUrl,
+          name: `summary-${files[0].name.replace(/\.pdf$/, '.txt')}`,
+          analysis: 'PDF summarization complete.',
+        });
+
       } else {
         await new Promise(resolve => setTimeout(resolve, 4000));
         clearInterval(progressInterval);
