@@ -68,6 +68,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
   const isImageToUrlTool = tool.slug === 'host-image-to-url';
   const isSplitPdfTool = tool.slug === 'split-pdf';
   const isImageCompressTool = tool.slug === 'compress-image';
+  const isPdfToWordTool = tool.slug === 'pdf-to-word';
 
   const onFileChange = (newFiles: File[]) => {
     if (isMultiFile) {
@@ -168,7 +169,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
       progressInterval = setInterval(() => {
         setProgress(prev => {
           if (prev >= 95) {
-            clearInterval(progressInterval);
+            clearInterval(progressInterval as NodeJS.Timeout);
             return prev;
           }
           return prev + 5;
@@ -189,6 +190,30 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
           name: `compressed-${files[0].name}`,
           analysis: response.analysisSummary,
         });
+      } else if (isPdfToWordTool && files.length > 0) {
+        const pdfjs = await import('pdfjs-dist');
+        pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.mjs`;
+
+        const arrayBuffer = await files[0].arrayBuffer();
+        const pdf = await pdfjs.getDocument(arrayBuffer).promise;
+        let textContent = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const text = await page.getTextContent();
+          textContent += text.items.map(item => ('str' in item ? item.str : '')).join(' ') + '\n\n';
+        }
+
+        const blob = new Blob([textContent], { type: 'text/plain' });
+        const resultUrl = URL.createObjectURL(blob);
+
+        if (progressInterval) clearInterval(progressInterval);
+        setProgress(100);
+        setConversionState('success');
+        setResult({
+          url: resultUrl,
+          name: `${files[0].name.replace(/\.pdf$/, '')}.txt`,
+        });
+
       } else if (isImageCompressTool && files.length > 0) {
           const imageFile = files[0];
           const imageUrl = URL.createObjectURL(imageFile);

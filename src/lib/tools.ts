@@ -7,7 +7,7 @@ import {
   type LucideIcon,
   BookText,
   ImageUp,
-  ScanText,
+  FileJson,
 } from 'lucide-react';
 
 export type Tool = {
@@ -28,7 +28,7 @@ export const iconMap = {
   FileImage,
   BookText,
   ImageUp,
-  ScanText,
+  FileJson,
 };
 
 export const tools: Tool[] = [
@@ -67,6 +67,15 @@ export const tools: Tool[] = [
     icon: Shrink,
     color: '#10b981',
     accept: ['image/png', 'image/jpeg'],
+  },
+  {
+    slug: 'pdf-to-word',
+    name: 'PDF to Word',
+    description: 'Convert a PDF to an editable text file.',
+    iconName: 'FileText',
+    icon: FileText,
+    color: '#3b82f6',
+    accept: 'application/pdf',
   },
   {
     slug: 'pdf-to-jpg',
