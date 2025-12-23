@@ -158,6 +158,42 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
           name: `summary-${files[0].name.replace(/\.pdf$/, '.txt')}`,
           analysis: 'PDF summarization complete.',
         });
+      } else if (
+        (tool.slug === 'jpg-to-pdf' || tool.slug === 'png-to-pdf') &&
+        files.length > 0
+      ) {
+        const pdfLib = await import('pdf-lib');
+        const pdfDoc = await pdfLib.PDFDocument.create();
+        const imageFile = files[0];
+        const imageBytes = await imageFile.arrayBuffer();
+        
+        let image;
+        if (tool.slug === 'jpg-to-pdf') {
+          image = await pdfDoc.embedJpg(imageBytes);
+        } else {
+          image = await pdfDoc.embedPng(imageBytes);
+        }
+        
+        const page = pdfDoc.addPage([image.width, image.height]);
+        page.drawImage(image, {
+          x: 0,
+          y: 0,
+          width: image.width,
+          height: image.height,
+        });
+
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const resultUrl = URL.createObjectURL(blob);
+        
+        clearInterval(progressInterval);
+        setProgress(100);
+        setConversionState('success');
+        
+        setResult({
+          url: resultUrl,
+          name: `converted-${files[0].name.replace(/\.(jpg|jpeg|png)$/, '.pdf')}`,
+        });
 
       } else {
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -165,7 +201,6 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
         setProgress(100);
         setConversionState('success');
         
-        // Create a dummy PDF for placeholder actions
         const pdfLib = await import('pdf-lib');
         const pdfDoc = await pdfLib.PDFDocument.create();
         const page = pdfDoc.addPage();
