@@ -18,6 +18,8 @@ import { useToast } from '@/hooks/use-toast';
 import { intelligentPdfCompression } from '@/ai/flows/intelligent-pdf-compression';
 import { cn } from '@/lib/utils';
 import { summarizePdf } from '@/ai/flows/pdf-summarization';
+import * as pdfjsLib from 'pdfjs-dist';
+
 
 type ConversionState = 'idle' | 'processing' | 'success' | 'error';
 type ClientTool = Omit<Tool, 'icon'> & { iconName: string };
@@ -198,14 +200,14 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
         (tool.slug === 'pdf-to-jpg' || tool.slug === 'pdf-to-png') &&
         files.length > 0
       ) {
-        const pdfjsLib = await import('pdfjs-dist');
         pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
           'pdfjs-dist/build/pdf.worker.min.mjs',
           import.meta.url,
         ).toString();
 
         const fileBytes = await files[0].arrayBuffer();
-        const pdf = await pdfjsLib.getDocument(fileBytes).promise;
+        const loadingTask = pdfjsLib.getDocument({ data: fileBytes });
+        const pdf = await loadingTask.promise;
         const page = await pdf.getPage(1); // Get the first page
         const viewport = page.getViewport({ scale: 2.0 });
 
@@ -458,5 +460,3 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
       return renderIdleState();
   }
 }
-
-    
