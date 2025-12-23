@@ -216,7 +216,11 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
           throw new Error('Could not get canvas context');
         }
 
-        await page.render({ canvasContext: context, viewport: viewport }).promise;
+        const renderContext = {
+            canvasContext: context,
+            viewport: viewport,
+        };
+        await page.render(renderContext).promise;
 
         const imageFormat = tool.slug === 'pdf-to-jpg' ? 'image/jpeg' : 'image/png';
         const fileExtension = tool.slug === 'pdf-to-jpg' ? 'jpg' : 'png';
