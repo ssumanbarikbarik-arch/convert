@@ -1,3 +1,4 @@
+import React from 'react';
 import Link from 'next/link';
 import { ChevronDown, Grid3x3, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,10 @@ const categorizedTools = tools.reduce((acc, tool) => {
     acc[tool.category].push(tool);
     return acc;
   }, {} as Record<ToolCategory, typeof tools>);
+
+  const categoryOrder: ToolCategory[] = [
+    'Organize PDF', 'Optimize PDF', 'Convert to PDF', 'Convert from PDF', 'Edit PDF', 'PDF Security'
+  ];
 
 export function Header() {
   return (
@@ -45,17 +50,17 @@ export function Header() {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-64">
-              {Object.entries(categorizedTools).map(([category, toolsInCategory]) => (
-                <div key={category}>
-                  <DropdownMenuLabel>{category}</DropdownMenuLabel>
-                  {toolsInCategory.map(tool => (
-                    <DropdownMenuItem key={tool.slug} asChild>
-                      <Link href={`/${tool.slug}`}>{tool.name}</Link>
-                    </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuSeparator />
-                </div>
-              ))}
+                {categoryOrder.map((category, index) => (
+                  <React.Fragment key={category}>
+                    <DropdownMenuLabel>{category}</DropdownMenuLabel>
+                    {categorizedTools[category]?.map(tool => (
+                      <DropdownMenuItem key={tool.slug} asChild>
+                        <Link href={`/${tool.slug}`}>{tool.name}</Link>
+                      </DropdownMenuItem>
+                    ))}
+                    {index < categoryOrder.length - 1 && <DropdownMenuSeparator />}
+                  </React.Fragment>
+                ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </nav>
