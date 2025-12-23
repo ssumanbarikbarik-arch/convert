@@ -5,7 +5,6 @@ import {
   Combine,
   Split,
   Shrink,
-  Link,
   type LucideIcon,
   BookText,
   ImageUp,
@@ -28,7 +27,6 @@ export const iconMap = {
   FileText,
   FileSpreadsheet,
   FileImage,
-  Link,
   BookText,
   ImageUp,
 };
@@ -68,15 +66,6 @@ export const tools: Tool[] = [
     iconName: 'FileText',
     icon: FileText,
     color: '#2563eb',
-    accept: 'application/pdf',
-  },
-  {
-    slug: 'pdf-to-excel',
-    name: 'PDF to Excel',
-    description: 'Convert PDF data to Excel spreadsheets.',
-    iconName: 'FileSpreadsheet',
-    icon: FileSpreadsheet,
-    color: '#16a34a',
     accept: 'application/pdf',
   },
   {
