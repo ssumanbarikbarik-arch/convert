@@ -8,16 +8,20 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the user."
+          "description": "Unique identifier for the User entity."
         },
         "email": {
           "type": "string",
-          "description": "Email address of the user.",
+          "description": "User's email address.",
           "format": "email"
         },
-        "username": {
+        "firstName": {
           "type": "string",
-          "description": "Username of the user."
+          "description": "User's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "User's last name."
         },
         "isAdmin": {
           "type": "boolean",
@@ -27,7 +31,8 @@
       "required": [
         "id",
         "email",
-        "username"
+        "firstName",
+        "lastName"
       ]
     },
     "Conversion": {
@@ -38,46 +43,96 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the conversion."
+          "description": "Unique identifier for the Conversion entity."
         },
         "userId": {
           "type": "string",
           "description": "Reference to User. (Relationship: User 1:N Conversion)"
         },
-        "inputFilename": {
+        "inputFileName": {
           "type": "string",
           "description": "Name of the input file."
         },
-        "outputFilename": {
+        "outputFileName": {
           "type": "string",
-          "description": "Name of the output file after conversion."
+          "description": "Name of the output file."
         },
-        "inputFileType": {
+        "inputFormat": {
           "type": "string",
-          "description": "Type of the input file (e.g., 'jpg', 'pdf')."
+          "description": "Format of the input file (e.g., JPG, PDF)."
         },
-        "outputFileType": {
+        "outputFormat": {
           "type": "string",
-          "description": "Type of the output file (e.g., 'pdf', 'jpg')."
+          "description": "Format of the output file (e.g., PDF, JPG)."
         },
         "conversionDate": {
           "type": "string",
-          "description": "Date and time when the conversion was performed.",
+          "description": "Date and time of the conversion.",
           "format": "date-time"
         },
-        "inputFileSize": {
+        "fileSize": {
           "type": "number",
-          "description": "Size of the input file in bytes."
+          "description": "Size of the file in bytes."
         }
       },
       "required": [
         "id",
         "userId",
-        "inputFilename",
-        "outputFilename",
-        "inputFileType",
-        "outputFileType",
+        "inputFileName",
+        "outputFileName",
+        "inputFormat",
+        "outputFormat",
         "conversionDate"
+      ]
+    },
+    "Tool": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Tool",
+      "type": "object",
+      "description": "Represents a conversion tool available on the SwiftConvert platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Tool entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the tool (e.g., 'JPG to PDF')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of what the tool does."
+        },
+        "inputFormats": {
+          "type": "array",
+          "description": "Array of acceptable input formats.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "outputFormats": {
+          "type": "array",
+          "description": "Array of acceptable output formats.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Indicates whether the tool is currently enabled for use."
+        },
+        "fileSizeLimit": {
+          "type": "number",
+          "description": "Maximum allowed file size for this tool, in bytes."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "inputFormats",
+        "outputFormats",
+        "enabled",
+        "fileSizeLimit"
       ]
     }
   },
@@ -96,11 +151,11 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Stores user profile information. Path-based ownership ensures only the user can access their own profile.",
+          "description": "Stores user profiles. Path-based ownership for private user data.",
           "params": [
             {
               "name": "userId",
-              "description": "The unique identifier for the user."
+              "description": "The unique identifier of the user."
             }
           ]
         }
@@ -112,15 +167,31 @@
           "schema": {
             "$ref": "#/backend/entities/Conversion"
           },
-          "description": "Stores conversion history for each user. Path-based ownership ensures only the user can access their own conversion data.",
+          "description": "Stores conversion history for each user. Includes denormalized 'userId' for authorization independence.",
           "params": [
             {
               "name": "userId",
-              "description": "The unique identifier for the user."
+              "description": "The unique identifier of the user who owns the conversion."
             },
             {
               "name": "conversionId",
-              "description": "The unique identifier for the conversion."
+              "description": "The unique identifier of the conversion."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/tools/{toolId}",
+        "definition": {
+          "entityName": "Tool",
+          "schema": {
+            "$ref": "#/backend/entities/Tool"
+          },
+          "description": "Stores information about available conversion tools.",
+          "params": [
+            {
+              "name": "toolId",
+              "description": "The unique identifier of the tool."
             }
           ]
         }
@@ -128,20 +199,20 @@
       {
         "path": "/roles_admin/{userId}",
         "definition": {
-          "entityName": "adminRole",
+          "entityName": "User",
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Collection to store admin roles. Existence of a document indicates admin privileges.",
+          "description": "Collection of admin users. Existence of document indicates admin role.",
           "params": [
             {
               "name": "userId",
-              "description": "The unique identifier for the user who has admin privileges."
+              "description": "The unique identifier of the admin user."
             }
           ]
         }
       }
     ],
-    "reasoning": "This Firestore structure prioritizes authorization independence and simplifies security rules. User data is stored in a private collection (`/users/{userId}`) ensuring only the user can access their information, while conversions are stored in a subcollection (`/users/{userId}/conversions/{conversionId}`). This hierarchical structure inherently secures the conversion data to the respective user. The structure uses path-based ownership for User data and their Conversions. To support the 'Admin Panel' requirement, a separate collection `/roles_admin/{userId}` stores admin roles, checking for the existence of a document instead of its content, enhancing security and simplicity. The structure segregation and path-based ownership ensures list operations are secure by default (QAPs) and access control is straightforward, enhancing debuggability. Crucially, this design avoids any `get()` calls in security rules, ensuring authorization independence and atomicity of operations."
+    "reasoning": "The Firestore structure is designed to adhere to the principles of Authorization Independence, Structural Segregation, and Access Modeling. User data, conversion data, and tool configurations are stored in separate collections with clear ownership and access rules.\n\n*   **Authorization Independence:** The `Conversion` documents denormalize `userId` to allow direct access control without needing to read the `User` document. The `isAdmin` status for global role management will be checked via existence checks against `/roles_admin/{userId}`.\n*   **Structural Segregation:** Different data types (users, conversions, tools, admin roles) are stored in separate collections, enabling homogeneous security postures within each collection.  Private user data is stored under `/users/{userId}`, while global tool data is under `/tools`. This segregation simplifies security rules and prevents unintended data exposure.\n*   **Access Modeling:** Path-based ownership (`/users/{userId}/conversions/{conversionId}`) is used for user-owned conversion data.  A dedicated collection `/roles_admin/{userId}` is used for storing admin roles. This existence-based check eliminates the need to read user documents for authorization.\n*   **QAPs (Rules are not Filters):** The structure supports secure `list` operations by storing conversions under the user's path (`/users/{userId}/conversions/{conversionId}`). This ensures that users can only list their own conversions. Admin status is checked with existence checks against `/roles_admin/{userId}`.\n\nThis structure promotes security, scalability, and debuggability by minimizing hierarchical dependencies, clearly defining access boundaries, and simplifying security rule logic."
   }
 }
