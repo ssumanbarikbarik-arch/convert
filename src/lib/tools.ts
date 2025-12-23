@@ -60,6 +60,15 @@ export const tools: Tool[] = [
     accept: 'application/pdf',
   },
   {
+    slug: 'compress-image',
+    name: 'Compress Image',
+    description: 'Reduce the file size of your JPG & PNG images.',
+    iconName: 'Shrink',
+    icon: Shrink,
+    color: '#10b981',
+    accept: ['image/png', 'image/jpeg'],
+  },
+  {
     slug: 'pdf-to-word',
     name: 'PDF to Word',
     description: 'Convert your PDFs to editable Word documents.',
@@ -132,7 +141,7 @@ export const tools: Tool[] = [
     accept: 'application/pdf',
   },
   {
-    slug: 'image-to-url',
+    slug: 'host-image-to-url',
     name: 'Host Image to URL',
     description: 'Upload an image and get a shareable URL.',
     iconName: 'ImageUp',

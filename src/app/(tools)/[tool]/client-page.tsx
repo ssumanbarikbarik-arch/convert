@@ -65,6 +65,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
   const isMultiFile = tool.slug === 'merge-pdf';
   const isImageToUrlTool = tool.slug === 'host-image-to-url';
   const isSplitPdfTool = tool.slug === 'split-pdf';
+  const isImageCompressTool = tool.slug === 'compress-image';
 
   const onFileChange = (newFiles: File[]) => {
     if (isMultiFile) {
@@ -179,6 +180,46 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
           name: `compressed-${files[0].name}`,
           analysis: response.analysisSummary,
         });
+      } else if (isImageCompressTool && files.length > 0) {
+          const imageFile = files[0];
+          const imageUrl = URL.createObjectURL(imageFile);
+          const image = new Image();
+          image.src = imageUrl;
+
+          const { promise, resolve } = Promise.withResolvers<string>();
+
+          image.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = image.width;
+            canvas.height = image.height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              throw new Error('Could not get canvas context');
+            }
+            ctx.drawImage(image, 0, 0);
+
+            // For JPG, quality can be adjusted. For PNG, it's lossless.
+            const quality = imageFile.type === 'image/jpeg' ? 0.7 : 1.0;
+            const resultDataUrl = canvas.toDataURL(imageFile.type, quality);
+            URL.revokeObjectURL(imageUrl);
+            resolve(resultDataUrl);
+          };
+          
+          image.onerror = () => {
+             URL.revokeObjectURL(imageUrl);
+             throw new Error('Failed to load image for compression.');
+          }
+
+          const resultUrl = await promise;
+
+          if (progressInterval) clearInterval(progressInterval);
+          setProgress(100);
+          setConversionState('success');
+          setResult({
+            url: resultUrl,
+            name: `compressed-${files[0].name}`,
+          });
+
       } else if (tool.slug === 'summarize-pdf' && files.length > 0) {
         const pdfDataUri = await fileToDataUri(files[0]);
         const response = await summarizePdf({pdfDataUri});
@@ -655,5 +696,3 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
       return renderIdleState();
   }
 }
-
-    
