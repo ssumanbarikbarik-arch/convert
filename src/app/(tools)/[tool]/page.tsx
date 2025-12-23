@@ -5,7 +5,7 @@ import type { Metadata } from 'next';
 import type { Tool } from '@/lib/tools';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ScanText } from 'lucide-react';
 
 export async function generateStaticParams() {
   return tools.map(tool => ({
