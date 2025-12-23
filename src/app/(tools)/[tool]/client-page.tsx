@@ -35,6 +35,8 @@ import { summarizePdf } from '@/ai/flows/pdf-summarization';
 import { Textarea } from '@/components/ui/textarea';
 import { useFirebase } from '@/firebase';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { Label } from '@/components/ui/label';
+import JSZip from 'jszip';
 
 
 type ConversionState = 'idle' | 'processing' | 'success' | 'error';
@@ -43,6 +45,7 @@ type ClientTool = Omit<Tool, 'icon'> & { iconName: string };
 export function ToolClientPage({ tool }: { tool: ClientTool }) {
   const [files, setFiles] = useState<File[]>([]);
   const [url, setUrl] = useState('');
+  const [pageRange, setPageRange] = useState('');
   const [conversionState, setConversionState] =
     useState<ConversionState>('idle');
   const [progress, setProgress] = useState(0);
@@ -61,6 +64,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
   const isUrlTool = tool.slug === 'url-to-pdf';
   const isMultiFile = tool.slug === 'merge-pdf';
   const isImageToUrlTool = tool.slug === 'image-to-url';
+  const isSplitPdfTool = tool.slug === 'split-pdf';
 
   const onFileChange = (newFiles: File[]) => {
     if (isMultiFile) {
@@ -116,6 +120,10 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUrl(e.target.value);
   };
+  
+  const handlePageRangeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPageRange(e.target.value);
+  };
 
   const fileToDataUri = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -135,6 +143,11 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
       setError('Please select at least one file.');
       return;
     }
+    if (isSplitPdfTool && !pageRange) {
+      setError('Please enter a page range.');
+      return;
+    }
+
 
     setConversionState('processing');
     setProgress(0);
@@ -182,6 +195,51 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
           name: `summary-${files[0].name.replace(/\.pdf$/, '.txt')}`,
           analysis: 'PDF summarization complete.',
         });
+      } else if (isSplitPdfTool && files.length > 0) {
+        const pdfLib = await import('pdf-lib');
+        const pdfDoc = await pdfLib.PDFDocument.load(await files[0].arrayBuffer());
+
+        const zip = new JSZip();
+
+        const totalPages = pdfDoc.getPageCount();
+        const ranges = pageRange.split(',').map(s => s.trim());
+        const pagesToExtract = new Set<number>();
+
+        for (const range of ranges) {
+          if (range.includes('-')) {
+            const [start, end] = range.split('-').map(Number);
+            for (let i = Math.max(1, start); i <= Math.min(totalPages, end); i++) {
+              pagesToExtract.add(i - 1);
+            }
+          } else {
+            const pageNum = Number(range);
+            if (pageNum >= 1 && pageNum <= totalPages) {
+              pagesToExtract.add(pageNum - 1);
+            }
+          }
+        }
+        
+        if (pagesToExtract.size === 0) {
+            throw new Error('No valid pages to extract. Please check your page range and the number of pages in the PDF.');
+        }
+
+        const newPdfDoc = await pdfLib.PDFDocument.create();
+        const copiedPages = await newPdfDoc.copyPages(pdfDoc, Array.from(pagesToExtract));
+        copiedPages.forEach(page => newPdfDoc.addPage(page));
+
+        const pdfBytes = await newPdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const resultUrl = URL.createObjectURL(blob);
+
+        clearInterval(progressInterval);
+        setProgress(100);
+        setConversionState('success');
+
+        setResult({
+          url: resultUrl,
+          name: `split-${files[0].name}`,
+        });
+
       } else if (
         (tool.slug === 'jpg-to-pdf' || tool.slug === 'png-to-pdf') &&
         files.length > 0
@@ -275,6 +333,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
         const downloadUrl = await getDownloadURL(imageRef);
 
         setConversionState('success');
+        setProgress(100);
         setResult({
           url: downloadUrl,
           name: file.name,
@@ -318,6 +377,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
   const reset = () => {
     setFiles([]);
     setUrl('');
+    setPageRange('');
     setConversionState('idle');
     setProgress(0);
     setError(null);
@@ -407,6 +467,20 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
                   </Button>
                 </div>
               ))}
+               {isSplitPdfTool && (
+                <div className="grid gap-2">
+                  <Label htmlFor="page-range">Page range</Label>
+                  <Input
+                    id="page-range"
+                    placeholder="e.g., 1-3, 5, 8"
+                    value={pageRange}
+                    onChange={handlePageRangeChange}
+                  />
+                   <p className="text-xs text-muted-foreground">
+                    Enter page numbers and/or ranges separated by commas.
+                  </p>
+                </div>
+              )}
               <Button className="w-full" onClick={handleConvert}>
                 Convert Now
               </Button>
