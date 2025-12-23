@@ -1,5 +1,19 @@
 'use client';
 
+// Polyfill for Promise.withResolvers
+if (typeof Promise.withResolvers !== 'function') {
+  Promise.withResolvers = function withResolvers<T>() {
+    let resolve: (value: T | PromiseLike<T>) => void;
+    let reject: (reason?: any) => void;
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { promise, resolve: resolve!, reject: reject! };
+  };
+}
+
+
 import React, { useState, useCallback, useRef } from 'react';
 import type { Tool } from '@/lib/tools';
 import {
@@ -206,7 +220,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
         ).toString();
 
         const fileBytes = await files[0].arrayBuffer();
-        const loadingTask = pdfjsLib.getDocument({ data: fileBytes });
+        const loadingTask = pdfjsLib.getDocument(fileBytes);
         const pdf = await loadingTask.promise;
         const page = await pdf.getPage(1); // Get the first page
         const viewport = page.getViewport({ scale: 2.0 });
