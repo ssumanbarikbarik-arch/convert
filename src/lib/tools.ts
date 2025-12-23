@@ -9,8 +9,8 @@ import {
   ImageUp,
   FileJson,
   FileUp,
+  ScanText,
 } from 'lucide-react';
-import { ScanText } from 'lucide-react';
 
 export type Tool = {
   slug: string;
@@ -71,6 +71,24 @@ export const tools: Tool[] = [
     icon: FileUp,
     color: '#22c55e',
     accept: 'application/pdf',
+  },
+  {
+    slug: 'pdf-to-image',
+    name: 'PDF to Image',
+    description: 'Convert a PDF page to a JPG or PNG image.',
+    iconName: 'FileImage',
+    icon: FileImage,
+    color: '#84cc16',
+    accept: 'application/pdf',
+  },
+  {
+    slug: 'image-to-pdf',
+    name: 'Image to PDF',
+    description: 'Convert a JPG or PNG image to a PDF document.',
+    iconName: 'FileImage',
+    icon: FileImage,
+    color: '#14b8a6',
+    accept: ['image/jpeg', 'image/png'],
   },
   {
     slug: 'image-to-text',

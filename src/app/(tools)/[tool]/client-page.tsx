@@ -69,6 +69,8 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
   const isSplitPdfTool = tool.slug === 'split-pdf';
   const isImageCompressTool = tool.slug === 'compress-image';
   const isPdfToWordTool = tool.slug === 'pdf-to-word';
+  const isImageToPdfTool = tool.slug === 'image-to-pdf';
+  const isPdfToImageTool = tool.slug === 'pdf-to-image';
 
   const onFileChange = (newFiles: File[]) => {
     if (isMultiFile) {
@@ -358,6 +360,69 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
           url: downloadUrl,
           name: file.name,
           isShareableUrl: true,
+        });
+      } else if (isImageToPdfTool && files.length > 0) {
+        const pdfLib = await import('pdf-lib');
+        const pdfDoc = await pdfLib.PDFDocument.create();
+        const imageFile = files[0];
+        const imageBytes = await imageFile.arrayBuffer();
+
+        let image;
+        if (imageFile.type === 'image/jpeg') {
+          image = await pdfDoc.embedJpg(imageBytes);
+        } else if (imageFile.type === 'image/png') {
+          image = await pdfDoc.embedPng(imageBytes);
+        } else {
+          throw new Error('Unsupported image type. Please use JPG or PNG.');
+        }
+
+        const page = pdfDoc.addPage([image.width, image.height]);
+        page.drawImage(image, {
+          x: 0,
+          y: 0,
+          width: image.width,
+          height: image.height,
+        });
+
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const resultUrl = URL.createObjectURL(blob);
+
+        if (progressInterval) clearInterval(progressInterval);
+        setProgress(100);
+        setConversionState('success');
+        setResult({
+          url: resultUrl,
+          name: `${imageFile.name.replace(/\.[^/.]+$/, "")}.pdf`,
+        });
+      } else if (isPdfToImageTool && files.length > 0) {
+        const pdfjs = await import('pdfjs-dist/build/pdf');
+        pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
+        
+        const arrayBuffer = await files[0].arrayBuffer();
+        const pdf = await pdfjs.getDocument(arrayBuffer).promise;
+        const page = await pdf.getPage(1); // Get the first page
+        
+        const viewport = page.getViewport({ scale: 2.0 });
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        if (!context) {
+          throw new Error('Could not get canvas context');
+        }
+
+        await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+        const resultUrl = canvas.toDataURL('image/png');
+        
+        if (progressInterval) clearInterval(progressInterval);
+        setProgress(100);
+        setConversionState('success');
+        setResult({
+          url: resultUrl,
+          name: `${files[0].name.replace(/\.pdf$/, '')}.png`,
         });
       } else {
         await new Promise(resolve => setTimeout(resolve, 1000));
