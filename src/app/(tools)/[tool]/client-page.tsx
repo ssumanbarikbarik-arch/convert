@@ -48,7 +48,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     url: string;
     name: string;
     analysis?: string;
-    isDataUrl?: boolean;
+    isObjectUrl?: boolean;
   } | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -56,7 +56,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
 
   const isUrlTool = tool.slug === 'url-to-pdf';
   const isMultiFile = tool.slug === 'merge-pdf';
-  const isImageToUrlTool = tool.slug === 'image-to-url';
+  const isImageToObjectUrlTool = tool.slug === 'image-to-object-url';
 
   const onFileChange = (newFiles: File[]) => {
     if (isMultiFile) {
@@ -255,15 +255,15 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
           name: `converted-${files[0].name.replace(/\.pdf$/, `.${fileExtension}`)}`,
         });
 
-      } else if (isImageToUrlTool && files.length > 0) {
-        const dataUrl = await fileToDataUri(files[0]);
+      } else if (isImageToObjectUrlTool && files.length > 0) {
+        const objectUrl = URL.createObjectURL(files[0]);
         clearInterval(progressInterval);
         setProgress(100);
         setConversionState('success');
         setResult({
-          url: dataUrl,
-          name: `data-url-for-${files[0].name}.txt`,
-          isDataUrl: true,
+          url: objectUrl,
+          name: `object-url-for-${files[0].name}.txt`,
+          isObjectUrl: true,
         });
       } else {
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -415,13 +415,13 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
   );
 
   const renderSuccessState = () => {
-    if (result?.isDataUrl) {
+    if (result?.isObjectUrl) {
       return (
         <Card>
           <CardContent className="p-6 space-y-4">
             <div className="space-y-2">
               <h2 className="text-2xl font-bold text-center">Conversion Successful!</h2>
-              <p className="text-muted-foreground text-center">Your Data URL is ready.</p>
+              <p className="text-muted-foreground text-center">Your temporary Object URL is ready.</p>
             </div>
             <div className="relative">
               <Textarea

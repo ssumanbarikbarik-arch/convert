@@ -149,9 +149,9 @@ export const tools: Tool[] = [
     accept: 'application/pdf',
   },
   {
-    slug: 'image-to-url',
-    name: 'Image to Data URL',
-    description: 'Convert an image file into a Data URL string.',
+    slug: 'image-to-object-url',
+    name: 'Image to Object URL',
+    description: 'Create a temporary browser URL for an image.',
     iconName: 'Link',
     icon: Link,
     color: '#0891b2',
