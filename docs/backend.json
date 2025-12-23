@@ -30,9 +30,7 @@
       },
       "required": [
         "id",
-        "email",
-        "firstName",
-        "lastName"
+        "email"
       ]
     },
     "Conversion": {
@@ -139,7 +137,8 @@
   "auth": {
     "providers": [
       "password",
-      "anonymous"
+      "anonymous",
+      "google.com"
     ]
   },
   "firestore": {
