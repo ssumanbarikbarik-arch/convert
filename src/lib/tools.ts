@@ -134,14 +134,6 @@ export const tools: Tool[] = [
     accept: 'image/png',
   },
   {
-    slug: 'url-to-pdf',
-    name: 'URL to PDF',
-    description: 'Convert any webpage into a PDF document.',
-    iconName: 'Link',
-    icon: Link,
-    color: '#64748b',
-  },
-  {
     slug: 'summarize-pdf',
     name: 'Summarize PDF',
     description: 'Get a quick summary of any PDF document using AI.',
