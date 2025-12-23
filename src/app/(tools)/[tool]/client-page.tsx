@@ -33,6 +33,9 @@ import { intelligentPdfCompression } from '@/ai/flows/intelligent-pdf-compressio
 import { cn } from '@/lib/utils';
 import { summarizePdf } from '@/ai/flows/pdf-summarization';
 import { Textarea } from '@/components/ui/textarea';
+import { useFirebase } from '@/firebase';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+
 
 type ConversionState = 'idle' | 'processing' | 'success' | 'error';
 type ClientTool = Omit<Tool, 'icon'> & { iconName: string };
@@ -48,15 +51,16 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     url: string;
     name: string;
     analysis?: string;
-    isObjectUrl?: boolean;
+    isShareableUrl?: boolean;
   } | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { firebaseApp } = useFirebase();
 
   const isUrlTool = tool.slug === 'url-to-pdf';
   const isMultiFile = tool.slug === 'merge-pdf';
-  const isImageToObjectUrlTool = tool.slug === 'image-to-object-url';
+  const isImageToUrlTool = tool.slug === 'image-to-url';
 
   const onFileChange = (newFiles: File[]) => {
     if (isMultiFile) {
@@ -255,15 +259,25 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
           name: `converted-${files[0].name.replace(/\.pdf$/, `.${fileExtension}`)}`,
         });
 
-      } else if (isImageToObjectUrlTool && files.length > 0) {
-        const objectUrl = URL.createObjectURL(files[0]);
+      } else if (isImageToUrlTool && files.length > 0) {
+        if (!firebaseApp) {
+          throw new Error('Firebase not initialized');
+        }
+        const storage = getStorage(firebaseApp);
+        const file = files[0];
+        const uniqueFileName = `${Date.now()}-${file.name}`;
+        const imageRef = storageRef(storage, `images/${uniqueFileName}`);
+        
+        await uploadBytes(imageRef, file);
+        const downloadUrl = await getDownloadURL(imageRef);
+
         clearInterval(progressInterval);
         setProgress(100);
         setConversionState('success');
         setResult({
-          url: objectUrl,
-          name: `object-url-for-${files[0].name}.txt`,
-          isObjectUrl: true,
+          url: downloadUrl,
+          name: file.name,
+          isShareableUrl: true,
         });
       } else {
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -415,19 +429,19 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
   );
 
   const renderSuccessState = () => {
-    if (result?.isObjectUrl) {
+    if (result?.isShareableUrl) {
       return (
         <Card>
           <CardContent className="p-6 space-y-4">
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-center">Conversion Successful!</h2>
-              <p className="text-muted-foreground text-center">Your temporary Object URL is ready.</p>
+              <h2 className="text-2xl font-bold text-center">Upload Successful!</h2>
+              <p className="text-muted-foreground text-center">Your shareable URL is ready.</p>
             </div>
             <div className="relative">
               <Textarea
                 readOnly
                 value={result.url}
-                className="h-48 resize-none pr-12"
+                className="h-24 resize-none pr-12"
               />
               <Button
                 variant="ghost"
@@ -523,5 +537,3 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
       return renderIdleState();
   }
 }
-
-    
