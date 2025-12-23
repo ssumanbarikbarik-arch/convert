@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { tools } from '@/lib/tools';
 import { ToolClientPage } from './client-page';
 import type { Metadata } from 'next';
+import type { Tool } from '@/lib/tools';
 
 export async function generateStaticParams() {
   return tools.map(tool => ({
@@ -28,12 +29,19 @@ export function generateMetadata({
   };
 }
 
+// We can't pass the icon component to the client component, so we omit it.
+type ClientTool = Omit<Tool, 'icon'>;
+
 export default function ToolPage({ params }: { params: { tool: string } }) {
   const tool = tools.find(t => t.slug === params.tool);
 
   if (!tool) {
     notFound();
   }
+
+  const { icon: Icon, ...rest } = tool;
+  const clientTool: ClientTool = rest;
+
 
   return (
     <div className="container mx-auto py-12 px-4 md:px-6">
@@ -42,7 +50,7 @@ export default function ToolPage({ params }: { params: { tool: string } }) {
           className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4"
           style={{ backgroundColor: tool.color }}
         >
-          <tool.icon className="w-10 h-10 text-white" />
+          <Icon className="w-10 h-10 text-white" />
         </div>
         <h1 className="text-3xl md:text-4xl font-bold tracking-tighter mb-2 font-headline">
           {tool.name}
@@ -53,7 +61,7 @@ export default function ToolPage({ params }: { params: { tool: string } }) {
       </div>
 
       <div className="max-w-3xl mx-auto">
-        <ToolClientPage tool={tool} />
+        <ToolClientPage tool={clientTool} />
       </div>
     </div>
   );
