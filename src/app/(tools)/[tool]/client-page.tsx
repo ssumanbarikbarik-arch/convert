@@ -507,7 +507,16 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
                 </div>
               )}
               {isMultiFile && files.length > 0 && (
-                <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = '';
+                      fileInputRef.current.click();
+                    }
+                  }}
+                >
                   Add More Files
                 </Button>
               )}
