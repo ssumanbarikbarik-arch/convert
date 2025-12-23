@@ -1,8 +1,11 @@
 import { notFound } from 'next/navigation';
-import { tools } from '@/lib/tools';
+import { tools, iconMap } from '@/lib/tools';
 import { ToolClientPage } from './client-page';
 import type { Metadata } from 'next';
 import type { Tool } from '@/lib/tools';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 
 export async function generateStaticParams() {
   return tools.map(tool => ({
@@ -29,7 +32,7 @@ export function generateMetadata({
   };
 }
 
-// We can't pass the icon component to the client component, so we omit it.
+// We can't pass the icon component to the client component, so we pass the name.
 type ClientTool = Omit<Tool, 'icon'>;
 
 export default function ToolPage({ params }: { params: { tool: string } }) {
@@ -39,13 +42,27 @@ export default function ToolPage({ params }: { params: { tool: string } }) {
     notFound();
   }
 
-  const { icon: Icon, ...rest } = tool;
-  const clientTool: ClientTool = rest;
+  const Icon = iconMap[tool.iconName];
+  const clientTool: ClientTool = {
+    slug: tool.slug,
+    name: tool.name,
+    description: tool.description,
+    iconName: tool.iconName,
+    accept: tool.accept,
+  };
 
 
   return (
     <div className="container mx-auto py-12 px-4 md:px-6">
-      <div className="text-center mb-8">
+       <div className="relative mb-8">
+        <Button asChild variant="outline" className="absolute -top-4 left-0">
+          <Link href="/">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Tools
+          </Link>
+        </Button>
+      </div>
+      <div className="text-center mb-8 pt-8">
         <div
           className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4"
           style={{ backgroundColor: tool.color }}
