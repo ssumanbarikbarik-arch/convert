@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Heart } from 'lucide-react';
 
 export function Header() {
   const isLoggedIn = false;
@@ -9,12 +8,8 @@ export function Header() {
       <div className="container flex h-16 items-center">
         <div className="mr-4 flex">
           <Link href="/" className="flex items-center space-x-2">
-            <span className="font-bold text-2xl font-logo text-gray-800">
-              Swift
-            </span>
-            <Heart className="h-6 w-6 text-primary fill-primary" />
-            <span className="font-bold text-2xl font-logo text-primary">
-              Convert
+            <span className="font-bold text-2xl font-logo">
+              <span className="text-gray-800">Swift</span><span className="text-primary">Convert</span>
             </span>
           </Link>
         </div>
