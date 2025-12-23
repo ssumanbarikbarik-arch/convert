@@ -43,12 +43,21 @@ export default function ToolPage({ params }: { params: { tool: string } }) {
   }
 
   const Icon = iconMap[tool.iconName];
+  if (!Icon) {
+    // Handle the case where the icon is not found, maybe return a default icon or null
+    // This check prevents the app from crashing if an icon is missing.
+    console.error(`Icon not found for tool: ${tool.name}`);
+    return notFound(); // Or some fallback UI
+  }
+  
   const clientTool: ClientTool = {
     slug: tool.slug,
     name: tool.name,
     description: tool.description,
     iconName: tool.iconName,
     accept: tool.accept,
+    category: tool.category,
+    color: tool.color,
   };
 
 
