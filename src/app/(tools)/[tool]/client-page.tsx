@@ -1,0 +1,354 @@
+'use client';
+
+import React, { useState, useCallback, useRef } from 'react';
+import type { Tool } from '@/lib/tools';
+import {
+  UploadCloud,
+  File as FileIcon,
+  Download,
+  RotateCcw,
+  X,
+  Loader2,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
+import { Card, CardContent } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { intelligentPdfCompression } from '@/ai/flows/intelligent-pdf-compression';
+import { cn } from '@/lib/utils';
+
+type ConversionState = 'idle' | 'processing' | 'success' | 'error';
+
+export function ToolClientPage({ tool }: { tool: Tool }) {
+  const [files, setFiles] = useState<File[]>([]);
+  const [url, setUrl] = useState('');
+  const [conversionState, setConversionState] =
+    useState<ConversionState>('idle');
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<{
+    url: string;
+    name: string;
+    analysis?: string;
+  } | null>(null);
+  const [isDragActive, setIsDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const isUrlTool = tool.slug === 'url-to-pdf';
+  const isMultiFile = tool.slug === 'merge-pdf';
+
+  const onFileChange = (newFiles: File[]) => {
+    if (isMultiFile) {
+        setFiles(prev => [...prev, ...newFiles]);
+    } else {
+        setFiles(newFiles.slice(0, 1));
+    }
+    setError(null);
+  };
+  
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragActive(false);
+
+      const droppedFiles = Array.from(e.dataTransfer.files);
+      if (droppedFiles && droppedFiles.length > 0) {
+        onFileChange(droppedFiles);
+      }
+    },
+    [isMultiFile]
+  );
+  
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length > 0) {
+        onFileChange(selectedFiles);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setFiles(files.filter((_, i) => i !== index));
+  };
+
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUrl(e.target.value);
+  };
+
+  const fileToDataUri = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleConvert = async () => {
+    if (isUrlTool && !url) {
+      setError('Please enter a URL.');
+      return;
+    }
+    if (!isUrlTool && files.length === 0) {
+      setError('Please select at least one file.');
+      return;
+    }
+
+    setConversionState('processing');
+    setProgress(0);
+    setError(null);
+
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 95) {
+          clearInterval(progressInterval);
+          return prev;
+        }
+        return prev + 5;
+      });
+    }, 200);
+
+    try {
+      if (tool.slug === 'compress-pdf' && files.length > 0) {
+        const pdfDataUri = await fileToDataUri(files[0]);
+        const response = await intelligentPdfCompression({ pdfDataUri });
+
+        clearInterval(progressInterval);
+        setProgress(100);
+        setConversionState('success');
+        setResult({
+          url: response.compressedPdfDataUri,
+          name: `compressed-${files[0].name}`,
+          analysis: response.analysisSummary,
+        });
+      } else {
+        await new Promise(resolve => setTimeout(resolve, 4000));
+        clearInterval(progressInterval);
+        setProgress(100);
+        setConversionState('success');
+        setResult({
+          url: '#',
+          name: isUrlTool
+            ? 'converted-page.pdf'
+            : `converted-${files[0]?.name || 'file'}.pdf`,
+        });
+      }
+    } catch (e) {
+      clearInterval(progressInterval);
+      setConversionState('error');
+      const errorMessage =
+        e instanceof Error ? e.message : 'An unknown error occurred.';
+      setError(`Conversion failed: ${errorMessage}`);
+      toast({
+        title: 'Conversion Error',
+        description: `Failed to convert your file. ${errorMessage}`,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const reset = () => {
+    setFiles([]);
+    setUrl('');
+    setConversionState('idle');
+    setProgress(0);
+    setError(null);
+    setResult(null);
+  };
+
+  const renderIdleState = () => {
+    if (isUrlTool) {
+      return (
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex gap-4">
+              <Input
+                type="url"
+                placeholder="https://example.com"
+                value={url}
+                onChange={handleUrlChange}
+                className="flex-grow"
+              />
+              <Button onClick={handleConvert}>Convert</Button>
+            </div>
+            {error && (
+              <p className="text-destructive text-sm mt-2">{error}</p>
+            )}
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <Card>
+        <CardContent className="p-6">
+          {files.length === 0 ? (
+            <div
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onClick={() => fileInputRef.current?.click()}
+              className={cn(
+                'border-2 border-dashed border-muted-foreground/50 rounded-lg p-12 text-center cursor-pointer transition-colors hover:border-primary/50',
+                isDragActive && 'border-primary bg-primary/10'
+              )}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                onChange={handleFileSelect}
+                accept={
+                  tool.accept
+                    ? Array.isArray(tool.accept)
+                      ? tool.accept.join(',')
+                      : tool.accept
+                    : undefined
+                }
+                multiple={isMultiFile}
+              />
+              <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                <UploadCloud className="w-12 h-12" />
+                <p className="font-semibold">
+                  Drag & drop files here, or click to select files
+                </p>
+                <p className="text-sm">Max file size: 10MB</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {files.map((file, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between bg-muted p-3 rounded-lg"
+                >
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <FileIcon className="w-6 h-6 text-primary shrink-0" />
+                    <span className="font-medium truncate">{file.name}</span>
+                    <span className="text-sm text-muted-foreground shrink-0">
+                      ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeFile(index)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button className="w-full" onClick={handleConvert}>
+                Convert Now
+              </Button>
+            </div>
+          )}
+          {error && <p className="text-destructive text-sm mt-2">{error}</p>}
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const renderProcessingState = () => (
+    <Card>
+      <CardContent className="p-6 text-center space-y-4">
+        <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary" />
+        <p className="font-semibold">Processing your file(s)...</p>
+        <Progress value={progress} className="w-full" />
+        <p className="text-sm text-muted-foreground">{progress}% complete</p>
+      </CardContent>
+    </Card>
+  );
+
+  const renderSuccessState = () => (
+    <Card>
+      <CardContent className="p-6 text-center space-y-4">
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+          <svg
+            className="w-8 h-8 text-green-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        </div>
+        <h2 className="text-2xl font-bold">Conversion Successful!</h2>
+        <p className="text-muted-foreground">Your file is ready for download.</p>
+        {result?.analysis && (
+          <div className="text-left bg-muted p-4 rounded-lg">
+            <h3 className="font-semibold mb-2">Analysis Summary</h3>
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+              {result.analysis}
+            </p>
+          </div>
+        )}
+        <div className="flex flex-wrap gap-4 justify-center">
+          <Button asChild size="lg">
+            <a href={result?.url} download={result?.name}>
+              <Download className="mr-2" />
+              Download File
+            </a>
+          </Button>
+          <Button variant="outline" size="lg" onClick={reset}>
+            <RotateCcw className="mr-2" />
+            Convert Another
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderErrorState = () => (
+    <Card>
+      <CardContent className="p-6 text-center space-y-4">
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+          <X className="w-8 h-8 text-red-600" />
+        </div>
+        <h2 className="text-2xl font-bold">Conversion Failed</h2>
+        <p className="text-destructive">{error}</p>
+        <Button variant="outline" size="lg" onClick={reset}>
+          <RotateCcw className="mr-2" />
+          Try Again
+        </Button>
+      </CardContent>
+    </Card>
+  );
+
+  switch (conversionState) {
+    case 'processing':
+      return renderProcessingState();
+    case 'success':
+      return renderSuccessState();
+    case 'error':
+      return renderErrorState();
+    case 'idle':
+    default:
+      return renderIdleState();
+  }
+}
