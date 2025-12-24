@@ -328,14 +328,24 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
         });
 
       } else if (isProtectPdfTool && files.length > 0) {
-        const pdfLib = await import('pdf-lib');
-        const pdfDoc = await pdfLib.PDFDocument.load(await files[0].arrayBuffer());
+        const { PDFDocument, PDFPermissions } = await import('pdf-lib');
+        const pdfDoc = await PDFDocument.load(await files[0].arrayBuffer());
 
         const pdfBytes = await pdfDoc.save({
           useObjectStreams: false,
           encrypt: {
             userPassword: password,
-            ownerPassword: password, // You could set a different owner password if needed
+            ownerPassword: password,
+            permissions: {
+              // passing null denies all permissions, requiring the userPassword to open
+              printing: null, 
+              modifying: null,
+              copying: null,
+              annotating: null,
+              fillingForms: null,
+              contentAccessibility: null,
+              documentAssembly: null,
+            }
           },
         });
 
