@@ -66,47 +66,6 @@ export default function Home() {
         </p>
       </section>
 
-      <section className="max-w-6xl mx-auto">
-        <Card className="p-8 md:p-12">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-8">
-            {toolCategories.map((category) => (
-              <div key={category.title} className="space-y-4">
-                <h3 className="text-sm font-bold uppercase text-muted-foreground tracking-wider">
-                  {category.title}
-                </h3>
-                <div className="space-y-3">
-                  {category.tools
-                    .map((slug) => tools.find((tool) => tool.slug === slug))
-                    .filter((tool) => !!tool)
-                    .map((tool) => {
-                      if (!tool) return null;
-                      const Icon = iconMap[tool.iconName];
-                      return (
-                        <Link
-                          href={`/${tool.slug}`}
-                          key={tool.slug}
-                          className="group"
-                        >
-                          <div className="flex items-center gap-3 transition-colors duration-200 hover:text-primary">
-                            <div
-                              className="w-8 h-8 rounded-sm flex items-center justify-center transition-colors duration-300"
-                              style={{ backgroundColor: tool.color }}
-                            >
-                              <Icon className="w-5 h-5 text-white" />
-                            </div>
-                            <span className="font-medium text-sm">
-                              {tool.name}
-                            </span>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </section>
     </div>
   );
 }
