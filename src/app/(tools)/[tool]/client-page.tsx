@@ -837,6 +837,18 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
           </div>
           <h2 className="text-2xl font-bold">Conversion Successful!</h2>
           <p className="text-muted-foreground">Your file is ready for download.</p>
+          {isAddWatermarkTool && result?.url && (
+            <div className="my-4">
+              <h3 className="font-semibold mb-2">Preview</h3>
+              <div className="border rounded-lg overflow-hidden">
+                <iframe
+                  src={result.url}
+                  className="w-full h-[500px]"
+                  title="PDF Preview"
+                />
+              </div>
+            </div>
+          )}
           {result?.analysis && (
             <div className="text-left bg-muted p-4 rounded-lg">
               <h3 className="font-semibold mb-2">Analysis Summary</h3>
