@@ -23,6 +23,7 @@ import {
   X,
   Loader2,
   Copy,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +46,7 @@ type ClientTool = Omit<Tool, 'icon'> & { iconName: string };
 
 export function ToolClientPage({ tool }: { tool: ClientTool }) {
   const [files, setFiles] = useState<File[]>([]);
+  const [watermarkFile, setWatermarkFile] = useState<File | null>(null);
   const [url, setUrl] = useState('');
   const [pageRange, setPageRange] = useState('');
   const [password, setPassword] = useState('');
@@ -61,6 +63,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
   } | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const watermarkInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { firebaseApp } = useFirebase();
 
@@ -73,6 +76,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
   const isImageToPdfTool = tool.slug === 'image-to-pdf';
   const isPdfToImageTool = tool.slug === 'pdf-to-image';
   const isProtectPdfTool = tool.slug === 'protect-pdf';
+  const isAddWatermarkTool = tool.slug === 'add-watermark';
 
   const onFileChange = (newFiles: File[]) => {
     if (isMultiFile) {
@@ -120,9 +124,20 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
         onFileChange(selectedFiles);
     }
   };
+  
+  const handleWatermarkFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      setWatermarkFile(selectedFile);
+    }
+  };
 
   const removeFile = (index: number) => {
     setFiles(files.filter((_, i) => i !== index));
+  };
+  
+  const removeWatermarkFile = () => {
+    setWatermarkFile(null);
   };
 
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -168,6 +183,10 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     }
     if (isProtectPdfTool && !password) {
       setError('Please enter a password.');
+      return;
+    }
+     if (isAddWatermarkTool && !watermarkFile) {
+      setError('Please upload a watermark image.');
       return;
     }
 
@@ -457,6 +476,46 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
           url: resultUrl,
           name: `${files[0].name.replace(/\.pdf$/, '')}.png`,
         });
+      } else if (isAddWatermarkTool && files.length > 0 && watermarkFile) {
+        const { PDFDocument } = await import('pdf-lib');
+        const pdfDoc = await PDFDocument.load(await files[0].arrayBuffer());
+        const watermarkBytes = await watermarkFile.arrayBuffer();
+
+        let watermarkImage;
+        if (watermarkFile.type === 'image/png') {
+            watermarkImage = await pdfDoc.embedPng(watermarkBytes);
+        } else if (watermarkFile.type === 'image/jpeg') {
+            watermarkImage = await pdfDoc.embedJpg(watermarkBytes);
+        } else {
+            throw new Error('Unsupported watermark image type. Please use PNG or JPG.');
+        }
+
+        const pages = pdfDoc.getPages();
+        for (const page of pages) {
+            const { width, height } = page.getSize();
+            const imageWidth = watermarkImage.width / 2;
+            const imageHeight = watermarkImage.height / 2;
+
+            page.drawImage(watermarkImage, {
+                x: width / 2 - imageWidth / 2,
+                y: height / 2 - imageHeight / 2,
+                width: imageWidth,
+                height: imageHeight,
+                opacity: 0.5,
+            });
+        }
+
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const resultUrl = URL.createObjectURL(blob);
+
+        if (progressInterval) clearInterval(progressInterval);
+        setProgress(100);
+        setConversionState('success');
+        setResult({
+          url: resultUrl,
+          name: `watermarked-${files[0].name}`,
+        });
       } else {
         // Placeholder for any other tool
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -498,6 +557,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     setUrl('');
     setPageRange('');
     setPassword('');
+    setWatermarkFile(null);
     setCompressionQuality([70]);
     setConversionState('idle');
     setProgress(0);
@@ -615,6 +675,51 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
                   <p className="text-xs text-muted-foreground">
                     Set a password to protect your PDF.
                   </p>
+                </div>
+              )}
+               {isAddWatermarkTool && files.length > 0 && (
+                <div className="grid gap-2">
+                  <Label>Watermark Image</Label>
+                  {!watermarkFile ? (
+                    <div
+                      onClick={() => watermarkInputRef.current?.click()}
+                      className="border-2 border-dashed border-muted-foreground/50 rounded-lg p-6 text-center cursor-pointer transition-colors hover:border-primary/50"
+                    >
+                      <input
+                        ref={watermarkInputRef}
+                        type="file"
+                        className="hidden"
+                        onChange={handleWatermarkFileSelect}
+                        accept="image/png, image/jpeg"
+                      />
+                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                        <ImageIcon className="w-8 h-8" />
+                        <p className="font-semibold">
+                          Click to select watermark
+                        </p>
+                        <p className="text-sm">PNG or JPG</p>
+                      </div>
+                    </div>
+                  ) : (
+                     <div
+                      className="flex items-center justify-between bg-muted p-3 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <ImageIcon className="w-6 h-6 text-primary shrink-0" />
+                        <span className="font-medium truncate">{watermarkFile.name}</span>
+                        <span className="text-sm text-muted-foreground shrink-0">
+                          ({(watermarkFile.size / 1024 / 1024).toFixed(2)} MB)
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={removeWatermarkFile}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
               {isImageCompressTool && isJpg && (
