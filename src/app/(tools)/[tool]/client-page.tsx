@@ -47,6 +47,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
   const [files, setFiles] = useState<File[]>([]);
   const [url, setUrl] = useState('');
   const [pageRange, setPageRange] = useState('');
+  const [password, setPassword] = useState('');
   const [compressionQuality, setCompressionQuality] = useState([70]);
   const [conversionState, setConversionState] =
     useState<ConversionState>('idle');
@@ -71,6 +72,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
   const isPdfToWordTool = tool.slug === 'pdf-to-word';
   const isImageToPdfTool = tool.slug === 'image-to-pdf';
   const isPdfToImageTool = tool.slug === 'pdf-to-image';
+  const isProtectPdfTool = tool.slug === 'protect-pdf';
 
   const onFileChange = (newFiles: File[]) => {
     if (isMultiFile) {
@@ -131,6 +133,10 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     setPageRange(e.target.value);
   };
 
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+  };
+
   const fileToDataUri = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -158,6 +164,10 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     }
     if (isSplitPdfTool && !pageRange) {
       setError('Please enter a page range.');
+      return;
+    }
+    if (isProtectPdfTool && !password) {
+      setError('Please enter a password.');
       return;
     }
 
@@ -317,6 +327,27 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
           name: `split-${files[0].name}`,
         });
 
+      } else if (isProtectPdfTool && files.length > 0) {
+        const pdfLib = await import('pdf-lib');
+        const pdfDoc = await pdfLib.PDFDocument.load(await files[0].arrayBuffer());
+
+        const pdfBytes = await pdfDoc.save({
+          useObjectStreams: false, // Passwords don't work with object streams
+          userPassword: password,
+          ownerPassword: password,
+        });
+
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const resultUrl = URL.createObjectURL(blob);
+        
+        if (progressInterval) clearInterval(progressInterval);
+        setProgress(100);
+        setConversionState('success');
+        setResult({
+          url: resultUrl,
+          name: `protected-${files[0].name}`,
+        });
+
       } else if (isMultiFile && files.length > 0) {
         const pdfLib = await import('pdf-lib');
         const mergedPdf = await pdfLib.PDFDocument.create();
@@ -464,6 +495,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     setFiles([]);
     setUrl('');
     setPageRange('');
+    setPassword('');
     setCompressionQuality([70]);
     setConversionState('idle');
     setProgress(0);
@@ -565,6 +597,21 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
                   />
                    <p className="text-xs text-muted-foreground">
                     Enter page numbers and/or ranges separated by commas.
+                  </p>
+                </div>
+              )}
+              {isProtectPdfTool && (
+                <div className="grid gap-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter a password"
+                    value={password}
+                    onChange={handlePasswordChange}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Set a password to protect your PDF.
                   </p>
                 </div>
               )}
