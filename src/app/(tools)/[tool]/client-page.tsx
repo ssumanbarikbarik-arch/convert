@@ -332,9 +332,11 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
         const pdfDoc = await pdfLib.PDFDocument.load(await files[0].arrayBuffer());
 
         const pdfBytes = await pdfDoc.save({
-          useObjectStreams: false, // Passwords don't work with object streams
-          userPassword: password,
-          ownerPassword: password,
+          useObjectStreams: false,
+          encrypt: {
+            userPassword: password,
+            ownerPassword: password, // You could set a different owner password if needed
+          },
         });
 
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
