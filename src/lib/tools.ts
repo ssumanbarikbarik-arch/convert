@@ -133,16 +133,6 @@ export const tools: Tool[] = [
     category: 'Optimize PDF',
   },
   {
-    slug: 'repair-pdf',
-    name: 'Repair PDF',
-    description: 'Repair a corrupted or damaged PDF document.',
-    iconName: 'RefreshCcw',
-    icon: RefreshCcw,
-    color: 'hsl(92, 49%, 51%)',
-    accept: 'application/pdf',
-    category: 'Optimize PDF',
-  },
-  {
     slug: 'ocr-pdf',
     name: 'OCR PDF',
     description: 'Make your PDF searchable and selectable.',
