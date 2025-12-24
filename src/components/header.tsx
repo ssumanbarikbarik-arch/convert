@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { tools, iconMap } from '@/lib/tools';
 import { ChevronDown, Heart } from 'lucide-react';
 import React from 'react';
+import { Skeleton } from './ui/skeleton';
 
 const organizeTools = tools.filter(
   (tool) =>
@@ -40,7 +41,8 @@ const convertToPdfTools = tools.filter(
     tool.slug === 'word-to-pdf' ||
     tool.slug === 'powerpoint-to-pdf' ||
     tool.slug === 'excel-to-pdf' ||
-    tool.slug === 'html-to-pdf'
+    tool.slug === 'html-to-pdf' ||
+    tool.slug === 'image-to-pdf'
 );
 const convertFromPdfTools = tools.filter(
   (tool) =>
@@ -48,7 +50,8 @@ const convertFromPdfTools = tools.filter(
     tool.slug === 'pdf-to-word' ||
     tool.slug === 'pdf-to-powerpoint' ||
     tool.slug === 'pdf-to-excel' ||
-    tool.slug === 'pdf-to-pdfa'
+    tool.slug === 'pdf-to-pdfa' ||
+    tool.slug === 'pdf-to-image'
 );
 const editPdfTools = tools.filter(
   (tool) =>
@@ -213,6 +216,26 @@ export function Header() {
                   </div>
                   <div className="flex flex-col space-y-2">
                     <DropdownMenuLabel className="font-semibold text-base p-0">
+                      Optimize PDF
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {optimizeTools.map((tool) => {
+                      const Icon = iconMap[tool.iconName];
+                      return (
+                        <DropdownMenuItem key={tool.slug} asChild>
+                          <Link
+                            href={`/${tool.slug}`}
+                            className="flex items-center gap-2"
+                          >
+                            <Icon className="h-4 w-4" style={{color: tool.color}} />
+                            {tool.name}
+                          </Link>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <DropdownMenuLabel className="font-semibold text-base p-0">
                       Edit PDF
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -257,8 +280,12 @@ export function Header() {
           </DropdownMenu>
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-4">
-          {!isUserLoading &&
-            (user ? (
+           {isUserLoading ? (
+            <div className="flex items-center space-x-2">
+              <Skeleton className="h-8 w-16" />
+              <Skeleton className="h-8 w-24" />
+            </div>
+          ) : user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -312,7 +339,7 @@ export function Header() {
                   <Link href="/signup">Sign Up</Link>
                 </Button>
               </nav>
-            ))}
+            )}
         </div>
       </div>
     </header>
