@@ -52,7 +52,7 @@ export function Header() {
         <div className="mr-4 flex">
           <Link href="/" className="flex items-center space-x-2">
             <span className="font-bold text-2xl font-logo">
-              SwiftConvert
+              <span className="text-foreground">Swift</span><span className="text-destructive">Convert</span>
             </span>
           </Link>
         </div>
