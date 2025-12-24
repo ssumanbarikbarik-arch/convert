@@ -47,6 +47,7 @@ type ClientTool = Omit<Tool, 'icon'> & { iconName: string };
 export function ToolClientPage({ tool }: { tool: ClientTool }) {
   const [files, setFiles] = useState<File[]>([]);
   const [watermarkFile, setWatermarkFile] = useState<File | null>(null);
+  const [watermarkOpacity, setWatermarkOpacity] = useState([50]);
   const [url, setUrl] = useState('');
   const [pageRange, setPageRange] = useState('');
   const [password, setPassword] = useState('');
@@ -352,10 +353,8 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
 
         const pdfBytes = await pdfDoc.save({
           useObjectStreams: false,
-          encrypt: {
-            userPassword: password,
-            ownerPassword: password,
-          },
+          userPassword: password,
+          ownerPassword: password,
         });
 
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
@@ -501,7 +500,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
                 y: height / 2 - imageHeight / 2,
                 width: imageWidth,
                 height: imageHeight,
-                opacity: 0.5,
+                opacity: watermarkOpacity[0] / 100,
             });
         }
 
@@ -558,6 +557,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     setPassword('');
     setWatermarkFile(null);
     setCompressionQuality([70]);
+    setWatermarkOpacity([50]);
     setConversionState('idle');
     setProgress(0);
     setError(null);
@@ -677,47 +677,68 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
                 </div>
               )}
                {isAddWatermarkTool && files.length > 0 && (
-                <div className="grid gap-2">
-                  <Label>Watermark Image</Label>
-                  {!watermarkFile ? (
-                    <div
-                      onClick={() => watermarkInputRef.current?.click()}
-                      className="border-2 border-dashed border-muted-foreground/50 rounded-lg p-6 text-center cursor-pointer transition-colors hover:border-primary/50"
-                    >
-                      <input
-                        ref={watermarkInputRef}
-                        type="file"
-                        className="hidden"
-                        onChange={handleWatermarkFileSelect}
-                        accept="image/png, image/jpeg"
-                      />
-                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                        <ImageIcon className="w-8 h-8" />
-                        <p className="font-semibold">
-                          Click to select watermark
-                        </p>
-                        <p className="text-sm">PNG or JPG</p>
-                      </div>
-                    </div>
-                  ) : (
-                     <div
-                      className="flex items-center justify-between bg-muted p-3 rounded-lg"
-                    >
-                      <div className="flex items-center gap-3 overflow-hidden">
-                        <ImageIcon className="w-6 h-6 text-primary shrink-0" />
-                        <span className="font-medium truncate">{watermarkFile.name}</span>
-                        <span className="text-sm text-muted-foreground shrink-0">
-                          ({(watermarkFile.size / 1024 / 1024).toFixed(2)} MB)
-                        </span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={removeWatermarkFile}
+                <div className="space-y-4">
+                  <div className="grid gap-2">
+                    <Label>Watermark Image</Label>
+                    {!watermarkFile ? (
+                      <div
+                        onClick={() => watermarkInputRef.current?.click()}
+                        className="border-2 border-dashed border-muted-foreground/50 rounded-lg p-6 text-center cursor-pointer transition-colors hover:border-primary/50"
                       >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
+                        <input
+                          ref={watermarkInputRef}
+                          type="file"
+                          className="hidden"
+                          onChange={handleWatermarkFileSelect}
+                          accept="image/png, image/jpeg"
+                        />
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <ImageIcon className="w-8 h-8" />
+                          <p className="font-semibold">
+                            Click to select watermark
+                          </p>
+                          <p className="text-sm">PNG or JPG</p>
+                        </div>
+                      </div>
+                    ) : (
+                       <div
+                        className="flex items-center justify-between bg-muted p-3 rounded-lg"
+                      >
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <ImageIcon className="w-6 h-6 text-primary shrink-0" />
+                          <span className="font-medium truncate">{watermarkFile.name}</span>
+                          <span className="text-sm text-muted-foreground shrink-0">
+                            ({(watermarkFile.size / 1024 / 1024).toFixed(2)} MB)
+                          </span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={removeWatermarkFile}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  {watermarkFile && (
+                     <div className="grid gap-2 pt-2">
+                        <div className="flex justify-between items-center">
+                          <Label htmlFor="opacity">Transparency</Label>
+                          <span className="text-sm font-medium text-muted-foreground">{watermarkOpacity[0]}%</span>
+                        </div>
+                        <Slider
+                          id="opacity"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={watermarkOpacity}
+                          onValueChange={setWatermarkOpacity}
+                        />
+                         <p className="text-xs text-muted-foreground">
+                          Set the transparency of the watermark. 100% is fully opaque.
+                        </p>
+                      </div>
                   )}
                 </div>
               )}
