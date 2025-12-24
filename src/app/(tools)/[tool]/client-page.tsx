@@ -425,6 +425,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
           name: `${files[0].name.replace(/\.pdf$/, '')}.png`,
         });
       } else {
+        // Placeholder for any other tool
         await new Promise(resolve => setTimeout(resolve, 1000));
         clearInterval(progressInterval);
         setProgress(100);
