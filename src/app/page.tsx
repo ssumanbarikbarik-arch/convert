@@ -21,7 +21,7 @@ export default function Home() {
             const Icon = iconMap[tool.iconName];
             return (
               <Link href={`/${tool.slug}`} key={tool.slug} className="group">
-                <Card className="h-full hover:shadow-lg transition-shadow duration-300 flex flex-col">
+                <Card className="h-full hover:shadow-lg transition-all duration-300 flex flex-col hover:border-primary">
                   <CardContent className="p-6 flex flex-col items-center text-center flex-grow">
                     <div
                       className="w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110"
