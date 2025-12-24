@@ -14,7 +14,7 @@ import {
   RectangleHorizontal,
   X,
   FileScan,
-  RotateCcw,
+  RotateCw,
   Plus,
   SquarePen,
   LockOpen,
@@ -22,6 +22,7 @@ import {
   Signature,
   EyeOff,
   ShieldCheck,
+  RotateCcw,
 } from 'lucide-react';
 
 export type Tool = {
@@ -31,6 +32,7 @@ export type Tool = {
   iconName: keyof typeof iconMap;
   icon: LucideIcon;
   color: string;
+  category: 'All' | 'Organize PDF' | 'Optimize PDF' | 'Convert to PDF' | 'Convert from PDF' | 'Edit PDF' | 'PDF Security';
   accept?: string | string[];
 };
 
@@ -68,6 +70,7 @@ export const tools: Tool[] = [
     icon: Combine,
     color: 'hsl(3, 80%, 62%)',
     accept: 'application/pdf',
+    category: 'Organize PDF',
   },
   {
     slug: 'split-pdf',
@@ -77,6 +80,7 @@ export const tools: Tool[] = [
     icon: Split,
     color: 'hsl(3, 80%, 62%)',
     accept: 'application/pdf',
+    category: 'Organize PDF',
   },
   {
     slug: 'remove-pages',
@@ -86,6 +90,7 @@ export const tools: Tool[] = [
     icon: X,
     color: 'hsl(3, 80%, 62%)',
     accept: 'application/pdf',
+    category: 'Organize PDF',
   },
   {
     slug: 'extract-pages',
@@ -95,6 +100,7 @@ export const tools: Tool[] = [
     icon: RectangleHorizontal,
     color: 'hsl(3, 80%, 62%)',
     accept: 'application/pdf',
+    category: 'Organize PDF',
   },
   {
     slug: 'organize-pdf',
@@ -104,6 +110,7 @@ export const tools: Tool[] = [
     icon: Split,
     color: 'hsl(3, 80%, 62%)',
     accept: 'application/pdf',
+    category: 'Organize PDF',
   },
   {
     slug: 'scan-to-pdf',
@@ -113,6 +120,7 @@ export const tools: Tool[] = [
     icon: FileScan,
     color: 'hsl(3, 80%, 62%)',
     accept: ['image/jpeg', 'image/png'],
+    category: 'Organize PDF',
   },
   {
     slug: 'compress-pdf',
@@ -122,6 +130,7 @@ export const tools: Tool[] = [
     icon: Shrink,
     color: 'hsl(92, 49%, 51%)',
     accept: 'application/pdf',
+    category: 'Optimize PDF',
   },
   {
     slug: 'repair-pdf',
@@ -131,6 +140,7 @@ export const tools: Tool[] = [
     icon: RefreshCcw,
     color: 'hsl(92, 49%, 51%)',
     accept: 'application/pdf',
+    category: 'Optimize PDF',
   },
   {
     slug: 'ocr-pdf',
@@ -140,6 +150,7 @@ export const tools: Tool[] = [
     icon: FileScan,
     color: 'hsl(92, 49%, 51%)',
     accept: 'application/pdf',
+    category: 'Optimize PDF',
   },
   {
     slug: 'jpg-to-pdf',
@@ -149,6 +160,7 @@ export const tools: Tool[] = [
     icon: FileImage,
     color: 'hsl(47, 98%, 52%)',
     accept: 'image/jpeg',
+    category: 'Convert to PDF',
   },
   {
     slug: 'word-to-pdf',
@@ -158,6 +170,7 @@ export const tools: Tool[] = [
     icon: FileText,
     color: 'hsl(47, 98%, 52%)',
     accept: '.doc,.docx',
+    category: 'Convert to PDF',
   },
   {
     slug: 'powerpoint-to-pdf',
@@ -167,6 +180,7 @@ export const tools: Tool[] = [
     icon: FileText,
     color: 'hsl(47, 98%, 52%)',
     accept: '.ppt,.pptx',
+    category: 'Convert to PDF',
   },
   {
     slug: 'excel-to-pdf',
@@ -176,6 +190,7 @@ export const tools: Tool[] = [
     icon: FileText,
     color: 'hsl(47, 98%, 52%)',
     accept: '.xls,.xlsx',
+    category: 'Convert to PDF',
   },
   {
     slug: 'html-to-pdf',
@@ -184,6 +199,7 @@ export const tools: Tool[] = [
     iconName: 'FileJson',
     icon: FileJson,
     color: 'hsl(47, 98%, 52%)',
+    category: 'Convert to PDF',
   },
   {
     slug: 'pdf-to-jpg',
@@ -193,6 +209,7 @@ export const tools: Tool[] = [
     icon: FileImage,
     color: 'hsl(47, 98%, 52%)',
     accept: 'application/pdf',
+    category: 'Convert from PDF',
   },
   {
     slug: 'pdf-to-word',
@@ -202,6 +219,7 @@ export const tools: Tool[] = [
     icon: FileText,
     color: 'hsl(47, 98%, 52%)',
     accept: 'application/pdf',
+    category: 'Convert from PDF',
   },
   {
     slug: 'pdf-to-powerpoint',
@@ -211,6 +229,7 @@ export const tools: Tool[] = [
     icon: FileText,
     color: 'hsl(47, 98%, 52%)',
     accept: 'application/pdf',
+    category: 'Convert from PDF',
   },
   {
     slug: 'pdf-to-excel',
@@ -220,6 +239,7 @@ export const tools: Tool[] = [
     icon: FileText,
     color: 'hsl(47, 98%, 52%)',
     accept: 'application/pdf',
+    category: 'Convert from PDF',
   },
   {
     slug: 'pdf-to-pdfa',
@@ -229,6 +249,7 @@ export const tools: Tool[] = [
     icon: ShieldCheck,
     color: 'hsl(47, 98%, 52%)',
     accept: 'application/pdf',
+    category: 'Convert from PDF',
   },
   {
     slug: 'rotate-pdf',
@@ -238,6 +259,7 @@ export const tools: Tool[] = [
     icon: RotateCcw,
     color: 'hsl(283, 75%, 53%)',
     accept: 'application/pdf',
+    category: 'Edit PDF',
   },
   {
     slug: 'add-page-numbers',
@@ -247,6 +269,7 @@ export const tools: Tool[] = [
     icon: Plus,
     color: 'hsl(283, 75%, 53%)',
     accept: 'application/pdf',
+    category: 'Edit PDF',
   },
   {
     slug: 'add-watermark',
@@ -256,6 +279,7 @@ export const tools: Tool[] = [
     icon: ImageUp,
     color: 'hsl(283, 75%, 53%)',
     accept: 'application/pdf',
+    category: 'Edit PDF',
   },
   {
     slug: 'edit-pdf',
@@ -265,6 +289,7 @@ export const tools: Tool[] = [
     icon: SquarePen,
     color: 'hsl(283, 75%, 53%)',
     accept: 'application/pdf',
+    category: 'Edit PDF',
   },
   {
     slug: 'unlock-pdf',
@@ -274,6 +299,7 @@ export const tools: Tool[] = [
     icon: LockOpen,
     color: 'hsl(215, 87%, 52%)',
     accept: 'application/pdf',
+    category: 'PDF Security',
   },
   {
     slug: 'protect-pdf',
@@ -283,6 +309,7 @@ export const tools: Tool[] = [
     icon: Lock,
     color: 'hsl(215, 87%, 52%)',
     accept: 'application/pdf',
+    category: 'PDF Security',
   },
   {
     slug: 'sign-pdf',
@@ -292,6 +319,7 @@ export const tools: Tool[] = [
     icon: Signature,
     color: 'hsl(215, 87%, 52%)',
     accept: 'application/pdf',
+    category: 'PDF Security',
   },
   {
     slug: 'redact-pdf',
@@ -301,41 +329,17 @@ export const tools: Tool[] = [
     icon: EyeOff,
     color: 'hsl(215, 87%, 52%)',
     accept: 'application/pdf',
+    category: 'PDF Security',
   },
-  {
+   {
     slug: 'summarize-pdf',
     name: 'Summarize PDF',
     description: 'Get a quick summary of any PDF document using AI.',
     iconName: 'BookText',
     icon: BookText,
-    color: 'hsl(215, 87%, 52%)',
-    accept: 'application/pdf',
-  },
-  {
-    slug: 'image-to-pdf',
-    name: 'Image to PDF',
-    description: 'Convert PNG, JPG, and other images to PDF.',
-    iconName: 'FileImage',
-    icon: FileImage,
-    color: 'hsl(47, 98%, 52%)',
-    accept: 'image/*',
-  },
-  {
-    slug: 'pdf-to-image',
-    name: 'PDF to Image',
-    description: 'Convert pages from a PDF into PNG images.',
-    iconName: 'FileImage',
-    icon: FileImage,
-    color: 'hsl(47, 98%, 52%)',
-    accept: 'application/pdf',
-  },
-  {
-    slug: 'url-to-pdf',
-    name: 'URL to PDF',
-    description: 'Convert any webpage into a PDF document.',
-    iconName: 'FileJson',
-    icon: FileJson,
     color: 'hsl(160, 84%, 39%)',
+    accept: 'application/pdf',
+    category: 'All',
   },
   {
     slug: 'host-image-to-url',
@@ -345,5 +349,26 @@ export const tools: Tool[] = [
     icon: ImageUp,
     color: 'hsl(283, 75%, 53%)',
     accept: 'image/*',
+    category: 'All',
+  },
+   {
+    slug: 'image-to-pdf',
+    name: 'Image to PDF',
+    description: 'Convert various image formats to PDF.',
+    iconName: 'FileImage',
+    icon: FileImage,
+    color: 'hsl(47, 98%, 52%)',
+    accept: 'image/jpeg,image/png,image/gif,image/bmp,image/tiff',
+    category: 'Convert to PDF',
+  },
+  {
+    slug: 'pdf-to-image',
+    name: 'PDF to Image',
+    description: 'Convert PDF pages to images (JPG, PNG).',
+    iconName: 'FileImage',
+    icon: FileImage,
+    color: 'hsl(47, 98%, 52%)',
+    accept: 'application/pdf',
+    category: 'Convert from PDF',
   },
 ];
