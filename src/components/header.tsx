@@ -32,7 +32,6 @@ const organizeTools = tools.filter(
 const optimizeTools = tools.filter(
   (tool) =>
     tool.slug === 'compress-pdf' ||
-    tool.slug === 'repair-pdf' ||
     tool.slug === 'ocr-pdf'
 );
 const convertToPdfTools = tools.filter(
