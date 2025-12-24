@@ -506,8 +506,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
         }
 
         const pdfBytes = await pdfDoc.save();
-        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        const resultUrl = URL.createObjectURL(blob);
+        const resultUrl = `data:application/pdf;base64,${Buffer.from(pdfBytes).toString('base64')}`;
 
         if (progressInterval) clearInterval(progressInterval);
         setProgress(100);
@@ -842,7 +841,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
               <h3 className="font-semibold mb-2">Preview</h3>
               <div className="border rounded-lg overflow-hidden">
                 <iframe
-                  src={result.url}
+                  srcDoc={`<embed src="${result.url}" type="application/pdf" width="100%" height="100%"/>`}
                   className="w-full h-[500px]"
                   title="PDF Preview"
                 />
