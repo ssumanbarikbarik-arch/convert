@@ -102,7 +102,7 @@ export function Header() {
           <Link href="/" className="flex items-center space-x-2">
             <span className="font-bold text-2xl font-logo">
               <span className="text-foreground">Swift</span>
-              <span className="text-destructive">Convert</span>
+              <span className="text-primary">Convert</span>
             </span>
           </Link>
         </div>
