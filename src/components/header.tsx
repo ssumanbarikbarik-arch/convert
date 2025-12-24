@@ -54,15 +54,12 @@ const editPdfTools = tools.filter(
   (tool) =>
     tool.slug === 'rotate-pdf' ||
     tool.slug === 'add-page-numbers' ||
-    tool.slug === 'add-watermark' ||
-    tool.slug === 'edit-pdf'
+    tool.slug === 'add-watermark'
 );
 const pdfSecurityTools = tools.filter(
   (tool) =>
     tool.slug === 'unlock-pdf' ||
-    tool.slug === 'protect-pdf' ||
-    tool.slug === 'sign-pdf' ||
-    tool.slug === 'redact-pdf'
+    tool.slug === 'protect-pdf'
 );
 
 export function Header() {
