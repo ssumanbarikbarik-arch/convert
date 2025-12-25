@@ -265,7 +265,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
       setError('Please upload a watermark image.');
       return;
     }
-    if (isImageCompressToSizeTool && targetSize <= 0) {
+    if ((isImageCompressToSizeTool || isPdfCompressTool) && targetSize <= 0) {
         setError('Please enter a valid target size.');
         return;
     }
@@ -291,9 +291,23 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     try {
       if (isPdfCompressTool && files.length > 0) {
         const pdfDataUri = await fileToDataUri(files[0]);
+        // Note: As "intelligent" compression to a specific size is very complex for PDFs
+        // on the client, we'll use the compressionLevel as a proxy. A more advanced
+        // implementation might involve a server-side worker with tools like Ghostscript.
+        // Level 1: Low (less compression), 2: Medium, 3: High (more compression)
+        const targetSizeInBytes = targetSize * (sizeUnit === 'KB' ? 1024 : 1024 * 1024);
+        let level: 1 | 2 | 3 = 2; // Default to recommended
+        const originalSize = files[0].size;
+
+        if (targetSizeInBytes < originalSize * 0.5) {
+            level = 3; // Extreme
+        } else if (targetSizeInBytes > originalSize * 0.8) {
+            level = 1; // Low
+        }
+
         const response = await intelligentPdfCompression({ 
             pdfDataUri,
-            compressionLevel: pdfCompressionLevel,
+            compressionLevel: level,
          });
 
         clearInterval(progressInterval);
@@ -846,7 +860,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
                   />
                 </div>
               )}
-              {isImageCompressToSizeTool && files.length > 0 && (
+              {(isImageCompressToSizeTool || isPdfCompressTool) && files.length > 0 && (
                  <div className="grid gap-4 pt-2">
                     <Label>Target File Size</Label>
                     <div className="flex items-center gap-2">
@@ -872,22 +886,8 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
                         </RadioGroup>
                     </div>
                      <p className="text-xs text-muted-foreground">
-                        The image will be compressed to be at or below this size.
+                        The file will be compressed to be at or below this size.
                     </p>
-                 </div>
-              )}
-              {isPdfCompressTool && files.length > 0 && (
-                 <div className="grid gap-2 pt-2">
-                   <ValueSlider
-                    label="Compression Level"
-                    value={pdfCompressionLevel}
-                    onValueChange={(val) => setPdfCompressionLevel(val as 1 | 2 | 3)}
-                    min={1}
-                    max={3}
-                    step={1}
-                    unit=""
-                    description="Recommended offers a good balance between file size and quality."
-                  />
                  </div>
               )}
               {isMultiFile && files.length > 0 && (
@@ -1051,5 +1051,3 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
       return renderIdleState();
   }
 }
-
-    
