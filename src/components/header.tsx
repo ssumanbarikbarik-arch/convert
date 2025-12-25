@@ -17,9 +17,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { tools, iconMap } from '@/lib/tools';
-import { ChevronDown, Heart } from 'lucide-react';
+import { ChevronDown, Search } from 'lucide-react';
 import React from 'react';
 import { Skeleton } from './ui/skeleton';
+import { Input } from './ui/input';
 
 const organizeTools = tools.filter(
   (tool) =>
@@ -280,6 +281,14 @@ export function Header() {
           </DropdownMenu>
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-4">
+           <div className="relative w-full max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search for a tool..."
+              className="pl-10"
+            />
+          </div>
            {isUserLoading ? (
             <div className="flex items-center space-x-2">
               <Skeleton className="h-8 w-16" />
