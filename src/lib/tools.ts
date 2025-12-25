@@ -132,6 +132,16 @@ export const tools: Tool[] = [
     accept: 'application/pdf',
     category: 'Optimize PDF',
   },
+   {
+    slug: 'compress-image',
+    name: 'Compress Image',
+    description: 'Reduce the size of your JPG or PNG without losing quality.',
+    iconName: 'Shrink',
+    icon: Shrink,
+    color: 'hsl(92, 49%, 51%)',
+    accept: 'image/jpeg,image/png',
+    category: 'Optimize PDF',
+  },
   {
     slug: 'ocr-pdf',
     name: 'OCR PDF',
