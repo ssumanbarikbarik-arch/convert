@@ -1,7 +1,7 @@
 {
   "framework": "nextjs",
   "functions": {
-    "src/ai/dev.ts": {
+    "src/ai/flows/index.ts": {
       "memory": 3008
     }
   }
