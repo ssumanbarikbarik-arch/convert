@@ -33,6 +33,8 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@700&display=swap"
           rel="stylesheet"
         />
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9257577871235579"
+     crossOrigin="anonymous"></script>
       </head>
       <body className={cn('min-h-dvh bg-background font-body antialiased')}>
         <FirebaseClientProvider>
