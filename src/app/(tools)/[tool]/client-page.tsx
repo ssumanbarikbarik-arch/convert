@@ -187,7 +187,16 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     return new Blob([ab], { type: mimeString });
   };
   
-  async function compressImageToSize(file: File, targetSizeInBytes: number): Promise<string> {
+  async function compressImageToSize(file: File, targetSizeInBytes: number): Promise<string | null> {
+    if (file.type !== 'image/jpeg') {
+        toast({
+            title: "Unsupported format",
+            description: "Only JPG images can be compressed to a target size. PNG compression is lossless and cannot guarantee a target size.",
+        });
+        // For non-JPGs, just return the original if it's already small enough.
+        return file.size <= targetSizeInBytes ? await fileToDataUri(file) : null;
+    }
+  
     if (file.size <= targetSizeInBytes) {
       toast({
         title: "No compression needed",
@@ -215,49 +224,36 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
       throw new Error('Could not get canvas context');
     }
     ctx.drawImage(image, 0, 0);
-
-    // Only JPG can be compressed with a quality setting.
-    if (file.type !== 'image/jpeg') {
-        toast({
-            title: "Unsupported format",
-            description: "Only JPG images can be compressed to a target size. PNG compression is lossless.",
-        });
-        return fileToDataUri(file);
-    }
     
     let low = 0;
     let high = 1;
-    let bestUrl = '';
     let lastValidUrl = '';
 
-    // Perform a binary search for 10 iterations to find the optimal quality
-    for (let i = 0; i < 10; i++) {
+    // Perform a binary search to find the optimal quality
+    for (let i = 0; i < 10; i++) { // 10 iterations for a good balance of speed and accuracy
       const mid = (low + high) / 2;
       const dataUrl = canvas.toDataURL('image/jpeg', mid);
       const blob = dataUriToBlob(dataUrl);
 
       if (blob.size <= targetSizeInBytes) {
-        // This quality is valid, store it and try for a higher quality
-        lastValidUrl = dataUrl;
+        lastValidUrl = dataUrl; // This quality is valid, store it and try for better
         low = mid;
       } else {
-        // This quality is too high, reduce it
-        high = mid;
+        high = mid; // This quality is too high, reduce it
       }
     }
     
-    // If a valid compression was found, use it. Otherwise, fall back to lowest possible quality.
-    bestUrl = lastValidUrl || canvas.toDataURL('image/jpeg', 0);
-
     if (!lastValidUrl) {
          toast({
             variant: "destructive",
             title: "Compression Target Unmet",
             description: "Could not compress to the target size. The smallest possible size was used.",
         });
+        // Return the best effort (lowest quality) if no quality met the target
+        return canvas.toDataURL('image/jpeg', 0);
     }
 
-    return bestUrl;
+    return lastValidUrl;
   }
 
   const isJpg = useMemo(() => {
@@ -372,11 +368,17 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
         
         if (progressInterval) clearInterval(progressInterval);
         setProgress(100);
+        
+        if (!resultUrl) {
+          throw new Error("Could not compress image to the target size because it's not a JPG or is already small enough.");
+        }
+
         setConversionState('success');
         setResult({
           url: resultUrl,
           name: `compressed-to-${targetSize}${sizeUnit}-${files[0].name}`,
         });
+
       } else if (tool.slug === 'summarize-pdf' && files.length > 0) {
         const pdfDataUri = await fileToDataUri(files[0]);
         const response = await summarizePdf({pdfDataUri});
@@ -841,7 +843,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
                   )}
                 </div>
               )}
-              {(isImageCompressToSizeTool || isPdfCompressTool || (isImageCompressTool && isJpg)) && files.length > 0 && (
+              {(isImageCompressToSizeTool || isPdfCompressTool || isImageCompressTool) && files.length > 0 && (
                  <div className="grid gap-4 pt-2">
                     <Label>Target File Size</Label>
                     <div className="flex items-center gap-2">
@@ -1037,3 +1039,5 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
       return renderIdleState();
   }
 }
+
+    
