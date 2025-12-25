@@ -188,52 +188,73 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
   };
   
   async function compressImageToSize(file: File, targetSizeInBytes: number): Promise<string> {
+    if (file.size <= targetSizeInBytes) {
+      toast({
+        title: "No compression needed",
+        description: "The file is already smaller than the target size.",
+      });
+      return fileToDataUri(file);
+    }
+
     const image = new Image();
     const imageUrl = URL.createObjectURL(file);
     image.src = imageUrl;
-
+  
     await new Promise((resolve, reject) => {
-        image.onload = resolve;
-        image.onerror = reject;
+      image.onload = resolve;
+      image.onerror = reject;
     });
-
+  
     URL.revokeObjectURL(imageUrl);
-
+  
     const canvas = document.createElement('canvas');
     canvas.width = image.width;
     canvas.height = image.height;
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-        throw new Error('Could not get canvas context');
+      throw new Error('Could not get canvas context');
     }
     ctx.drawImage(image, 0, 0);
 
-    // Only JPG can be compressed with a quality setting. PNG is lossless.
+    // Only JPG can be compressed with a quality setting.
     if (file.type !== 'image/jpeg') {
-        return canvas.toDataURL(file.type);
+        toast({
+            title: "Unsupported format",
+            description: "Only JPG images can be compressed to a target size. PNG compression is lossless.",
+        });
+        return fileToDataUri(file);
     }
-
+    
     let low = 0;
     let high = 1;
     let bestUrl = '';
-    
-    // Perform a binary search to find the optimal quality
-    for (let i = 0; i < 10; i++) { // Limit iterations to prevent infinite loops
-        const mid = (low + high) / 2;
-        const dataUrl = canvas.toDataURL('image/jpeg', mid);
-        const blob = dataUriToBlob(dataUrl);
+    let lastValidUrl = '';
 
-        if (blob.size <= targetSizeInBytes) {
-            bestUrl = dataUrl;
-            low = mid; // Try for better quality
-        } else {
-            high = mid; // Quality is too high, reduce it
-        }
+    // Perform a binary search for 10 iterations to find the optimal quality
+    for (let i = 0; i < 10; i++) {
+      const mid = (low + high) / 2;
+      const dataUrl = canvas.toDataURL('image/jpeg', mid);
+      const blob = dataUriToBlob(dataUrl);
+
+      if (blob.size <= targetSizeInBytes) {
+        // This quality is valid, store it and try for a higher quality
+        lastValidUrl = dataUrl;
+        low = mid;
+      } else {
+        // This quality is too high, reduce it
+        high = mid;
+      }
     }
     
-     if (!bestUrl) {
-        // If no suitable compression was found, return the lowest quality
-        return canvas.toDataURL('image/jpeg', 0);
+    // If a valid compression was found, use it. Otherwise, fall back to lowest possible quality.
+    bestUrl = lastValidUrl || canvas.toDataURL('image/jpeg', 0);
+
+    if (!lastValidUrl) {
+         toast({
+            variant: "destructive",
+            title: "Compression Target Unmet",
+            description: "Could not compress to the target size. The smallest possible size was used.",
+        });
     }
 
     return bestUrl;
