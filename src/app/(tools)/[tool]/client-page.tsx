@@ -71,6 +71,8 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     name: string;
     analysis?: string;
     isShareableUrl?: boolean;
+    originalSize?: number;
+    newSize?: number;
   } | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -290,33 +292,35 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
 
     try {
       if (isPdfCompressTool && files.length > 0) {
-        const pdfDataUri = await fileToDataUri(files[0]);
-        // Note: As "intelligent" compression to a specific size is very complex for PDFs
-        // on the client, we'll use the compressionLevel as a proxy. A more advanced
-        // implementation might involve a server-side worker with tools like Ghostscript.
-        // Level 1: Low (less compression), 2: Medium, 3: High (more compression)
-        const targetSizeInBytes = targetSize * (sizeUnit === 'KB' ? 1024 : 1024 * 1024);
-        let level: 1 | 2 | 3 = 2; // Default to recommended
-        const originalSize = files[0].size;
+        const { PDFDocument } = await import('pdf-lib');
+        const originalFile = files[0];
+        const pdfBytes = await originalFile.arrayBuffer();
+        const pdfDoc = await PDFDocument.load(pdfBytes);
 
-        if (targetSizeInBytes < originalSize * 0.5) {
-            level = 3; // Extreme
-        } else if (targetSizeInBytes > originalSize * 0.8) {
-            level = 1; // Low
+        // A simple strategy: re-save and flatten.
+        // This is not guaranteed to hit the target size but is a safe client-side operation.
+        // More advanced strategies (image resampling, etc.) are very complex on the client.
+        const form = pdfDoc.getForm();
+        try {
+          form.flatten();
+        } catch {
+          // Ignore error if there are no fields to flatten
         }
 
-        const response = await intelligentPdfCompression({ 
-            pdfDataUri,
-            compressionLevel: level,
-         });
+        const compressedPdfBytes = await pdfDoc.save({ useObjectStreams: false });
+        
+        const blob = new Blob([compressedPdfBytes], { type: 'application/pdf' });
+        const resultUrl = URL.createObjectURL(blob);
 
-        clearInterval(progressInterval);
+        if (progressInterval) clearInterval(progressInterval);
         setProgress(100);
         setConversionState('success');
         setResult({
-          url: response.compressedPdfDataUri,
-          name: `compressed-${files[0].name}`,
-          analysis: response.analysisSummary,
+          url: resultUrl,
+          name: `compressed-${originalFile.name}`,
+          originalSize: originalFile.size,
+          newSize: compressedPdfBytes.byteLength,
+          analysis: `PDF has been re-saved and optimized. Further compression may require more advanced tools.`
         });
       } else if (isPdfToWordTool && files.length > 0) {
         const pdfjs = await import('pdfjs-dist/build/pdf');
@@ -672,6 +676,16 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     setError(null);
     setResult(null);
   };
+  
+  const formatBytes = (bytes: number, decimals = 2) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  }
+
 
   const renderIdleState = () => {
     if (isUrlTool) {
@@ -1004,6 +1018,11 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                 {result.analysis}
               </p>
+               {result.originalSize && result.newSize && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  Original size: {formatBytes(result.originalSize)} | New size: {formatBytes(result.newSize)}
+                </p>
+              )}
             </div>
           )}
           <div className="flex flex-wrap gap-4 justify-center">
@@ -1051,3 +1070,5 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
       return renderIdleState();
   }
 }
+
+    

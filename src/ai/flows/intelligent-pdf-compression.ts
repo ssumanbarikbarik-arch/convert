@@ -38,6 +38,8 @@ const IntelligentPdfCompressionOutputSchema = z.object({
     .describe(
       'A summary of the analysis performed on the PDF and the compression settings used.'
     ),
+  originalSize: z.number().describe('The original size of the PDF in bytes.'),
+  newSize: z.number().describe('The new size of the PDF in bytes.'),
 });
 export type IntelligentPdfCompressionOutput = z.infer<
   typeof IntelligentPdfCompressionOutputSchema
@@ -60,26 +62,33 @@ const intelligentPdfCompressionFlow = ai.defineFlow(
     const pdfBytes = Buffer.from(base64Data, 'base64');
     const pdfDoc = await PDFDocument.load(pdfBytes);
     
-    // For now, we will just re-save the document which offers some basic compression.
-    // In a more advanced scenario, we would use the compressionLevel to change strategies
-    // (e.g., resampling images differently for each level).
-    const useObjectStreams = input.compressionLevel < 3;
+    // Flatten form fields if they exist
+    const form = pdfDoc.getForm();
+    try {
+        form.flatten();
+    } catch {
+        // Ignore error if no form fields exist
+    }
+    
+    // This is a basic compression strategy. For more advanced compression,
+    // one would need to process images within the PDF, which is complex.
+    // `useObjectStreams: false` can sometimes reduce file size for very small documents
+    // by avoiding the overhead of object streams, but for larger documents, `true` is better.
+    const useObjectStreams = pdfDoc.getPageCount() > 1;
 
     const compressedPdfBytes = await pdfDoc.save({ useObjectStreams });
     
     const compressedPdfDataUri = `data:application/pdf;base64,${Buffer.from(
       compressedPdfBytes
     ).toString('base64')}`;
-    
-    const levelMap = {
-        1: 'Low',
-        2: 'Recommended',
-        3: 'Extreme',
-    };
 
     return {
       compressedPdfDataUri,
-      analysisSummary: `Compression applied at '${levelMap[input.compressionLevel]}' level. The PDF has been re-saved to optimize its structure.`,
+      analysisSummary: `PDF structure has been optimized. For further reduction, consider using a tool that specifically compresses images within the PDF.`,
+      originalSize: pdfBytes.length,
+      newSize: compressedPdfBytes.length
     };
   }
 );
+
+    
