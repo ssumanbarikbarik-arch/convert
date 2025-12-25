@@ -40,6 +40,7 @@ import { Label } from '@/components/ui/label';
 import JSZip from 'jszip';
 import { Slider } from '@/components/ui/slider';
 import { ValueSlider } from '@/components/ui/value-slider';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 
 type ConversionState = 'idle' | 'processing' | 'success' | 'error';
@@ -60,6 +61,8 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
   const [password, setPassword] = useState('');
   const [compressionQuality, setCompressionQuality] = useState(70);
   const [pdfCompressionLevel, setPdfCompressionLevel] = useState<1 | 2 | 3>(2);
+  const [targetSize, setTargetSize] = useState(100);
+  const [sizeUnit, setSizeUnit] = useState<'KB' | 'MB'>('KB');
   const [conversionState, setConversionState] =
     useState<ConversionState>('idle');
   const [progress, setProgress] = useState(0);
@@ -81,6 +84,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
   const isImageToUrlTool = tool.slug === 'host-image-to-url';
   const isSplitPdfTool = tool.slug === 'split-pdf';
   const isImageCompressTool = tool.slug === 'compress-image';
+  const isImageCompressToSizeTool = tool.slug === 'compress-image-to-size';
   const isPdfCompressTool = tool.slug === 'compress-pdf';
   const isPdfToWordTool = tool.slug === 'pdf-to-word';
   const isImageToPdfTool = tool.slug === 'image-to-pdf';
@@ -171,6 +175,69 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     });
   };
 
+  const dataUriToBlob = (dataUri: string): Blob => {
+    const byteString = atob(dataUri.split(',')[1]);
+    const mimeString = dataUri.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mimeString });
+  };
+  
+  async function compressImageToSize(file: File, targetSizeInBytes: number): Promise<string> {
+    const image = new Image();
+    const imageUrl = URL.createObjectURL(file);
+    image.src = imageUrl;
+
+    await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = reject;
+    });
+
+    URL.revokeObjectURL(imageUrl);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        throw new Error('Could not get canvas context');
+    }
+    ctx.drawImage(image, 0, 0);
+
+    // Only JPG can be compressed with a quality setting. PNG is lossless.
+    if (file.type !== 'image/jpeg') {
+        return canvas.toDataURL(file.type);
+    }
+
+    let low = 0;
+    let high = 1;
+    let bestUrl = '';
+    
+    // Perform a binary search to find the optimal quality
+    for (let i = 0; i < 10; i++) { // Limit iterations to prevent infinite loops
+        const mid = (low + high) / 2;
+        const dataUrl = canvas.toDataURL('image/jpeg', mid);
+        const blob = dataUriToBlob(dataUrl);
+
+        if (blob.size <= targetSizeInBytes) {
+            bestUrl = dataUrl;
+            low = mid; // Try for better quality
+        } else {
+            high = mid; // Quality is too high, reduce it
+        }
+    }
+    
+     if (!bestUrl) {
+        // If no suitable compression was found, return the lowest quality
+        return canvas.toDataURL('image/jpeg', 0);
+    }
+
+    return bestUrl;
+  }
+
   const isJpg = useMemo(() => {
     if (isImageCompressTool && files.length > 0) {
       return files[0].type === 'image/jpeg';
@@ -198,6 +265,10 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
      if (isAddWatermarkTool && !watermarkFile) {
       setError('Please upload a watermark image.');
       return;
+    }
+    if (isImageCompressToSizeTool && targetSize <= 0) {
+        setError('Please enter a valid target size.');
+        return;
     }
 
 
@@ -257,7 +328,17 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
           url: resultUrl,
           name: `${files[0].name.replace(/\.pdf$/, '')}.doc`,
         });
-
+      } else if (isImageCompressToSizeTool && files.length > 0) {
+        const targetSizeInBytes = targetSize * (sizeUnit === 'KB' ? 1024 : 1024 * 1024);
+        const resultUrl = await compressImageToSize(files[0], targetSizeInBytes);
+        
+        if (progressInterval) clearInterval(progressInterval);
+        setProgress(100);
+        setConversionState('success');
+        setResult({
+          url: resultUrl,
+          name: `compressed-to-${targetSize}${sizeUnit}-${files[0].name}`,
+        });
       } else if (isImageCompressTool && files.length > 0) {
           const imageFile = files[0];
           const imageUrl = URL.createObjectURL(imageFile);
@@ -763,6 +844,36 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
                     description="Lower values result in smaller file sizes but lower quality."
                   />
                 </div>
+              )}
+              {isImageCompressToSizeTool && files.length > 0 && (
+                 <div className="grid gap-4 pt-2">
+                    <Label>Target File Size</Label>
+                    <div className="flex items-center gap-2">
+                        <Input
+                            type="number"
+                            value={targetSize}
+                            onChange={(e) => setTargetSize(Number(e.target.value))}
+                            className="w-24"
+                        />
+                        <RadioGroup
+                            value={sizeUnit}
+                            onValueChange={(value: 'KB' | 'MB') => setSizeUnit(value)}
+                            className="flex"
+                        >
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="KB" id="kb-radio" />
+                                <Label htmlFor="kb-radio">KB</Label>
+                            </div>
+                             <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="MB" id="mb-radio" />
+                                <Label htmlFor="mb-radio">MB</Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
+                     <p className="text-xs text-muted-foreground">
+                        The image will be compressed to be at or below this size.
+                    </p>
+                 </div>
               )}
               {isPdfCompressTool && files.length > 0 && (
                 <div className="grid gap-2 pt-2">

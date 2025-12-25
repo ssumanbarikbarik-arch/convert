@@ -23,6 +23,7 @@ import {
   EyeOff,
   ShieldCheck,
   RotateCcw,
+  Target,
 } from 'lucide-react';
 
 export type Tool = {
@@ -59,6 +60,7 @@ export const iconMap = {
   Signature,
   EyeOff,
   ShieldCheck,
+  Target,
 };
 
 export const tools: Tool[] = [
@@ -138,6 +140,16 @@ export const tools: Tool[] = [
     description: 'Reduce the size of your JPG or PNG without losing quality.',
     iconName: 'Shrink',
     icon: Shrink,
+    color: 'hsl(92, 49%, 51%)',
+    accept: 'image/jpeg,image/png',
+    category: 'Optimize PDF',
+  },
+  {
+    slug: 'compress-image-to-size',
+    name: 'Compress Image to Size',
+    description: 'Compress a JPG/PNG to a specific file size (e.g., 100KB).',
+    iconName: 'Target',
+    icon: Target,
     color: 'hsl(92, 49%, 51%)',
     accept: 'image/jpeg,image/png',
     category: 'Optimize PDF',
