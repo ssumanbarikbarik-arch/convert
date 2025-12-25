@@ -21,7 +21,7 @@ const Adsense = () => {
   }, []);
 
   return (
-    <div style={{ padding: '20px 0' }}>
+    <div style={{ padding: '0' }}>
       {/* 
                 ** IMPORTANT **
                 Paste your ad unit code from AdSense here.
