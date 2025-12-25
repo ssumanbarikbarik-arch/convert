@@ -240,11 +240,11 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
   }
 
   const isJpg = useMemo(() => {
-    if (isImageCompressTool && files.length > 0) {
+    if (files.length > 0) {
       return files[0].type === 'image/jpeg';
     }
     return false;
-  }, [files, isImageCompressTool]);
+  }, [files]);
 
   const handleConvert = async () => {
     if (isUrlTool && !url) {
@@ -267,7 +267,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
       setError('Please upload a watermark image.');
       return;
     }
-    if ((isImageCompressToSizeTool || isPdfCompressTool) && targetSize <= 0) {
+    if ((isImageCompressToSizeTool || isPdfCompressTool || isImageCompressTool) && targetSize <= 0) {
         setError('Please enter a valid target size.');
         return;
     }
@@ -345,7 +345,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
           url: resultUrl,
           name: `${files[0].name.replace(/\.pdf$/, '')}.doc`,
         });
-      } else if (isImageCompressToSizeTool && files.length > 0) {
+      } else if ((isImageCompressToSizeTool || isImageCompressTool) && files.length > 0) {
         const targetSizeInBytes = targetSize * (sizeUnit === 'KB' ? 1024 : 1024 * 1024);
         const resultUrl = await compressImageToSize(files[0], targetSizeInBytes);
         
@@ -356,46 +356,6 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
           url: resultUrl,
           name: `compressed-to-${targetSize}${sizeUnit}-${files[0].name}`,
         });
-      } else if (isImageCompressTool && files.length > 0) {
-          const imageFile = files[0];
-          const imageUrl = URL.createObjectURL(imageFile);
-          const image = new Image();
-          image.src = imageUrl;
-
-          const { promise, resolve } = Promise.withResolvers<string>();
-
-          image.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = image.width;
-            canvas.height = image.height;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-              throw new Error('Could not get canvas context');
-            }
-            ctx.drawImage(image, 0, 0);
-
-            // For JPG, quality can be adjusted. For PNG, it's lossless.
-            const quality = imageFile.type === 'image/jpeg' ? compressionQuality / 100 : 1.0;
-            const resultDataUrl = canvas.toDataURL(imageFile.type, quality);
-            URL.revokeObjectURL(imageUrl);
-            resolve(resultDataUrl);
-          };
-          
-          image.onerror = () => {
-             URL.revokeObjectURL(imageUrl);
-             throw new Error('Failed to load image for compression.');
-          }
-
-          const resultUrl = await promise;
-
-          if (progressInterval) clearInterval(progressInterval);
-          setProgress(100);
-          setConversionState('success');
-          setResult({
-            url: resultUrl,
-            name: `compressed-${files[0].name}`,
-          });
-
       } else if (tool.slug === 'summarize-pdf' && files.length > 0) {
         const pdfDataUri = await fileToDataUri(files[0]);
         const response = await summarizePdf({pdfDataUri});
@@ -860,21 +820,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
                   )}
                 </div>
               )}
-              {isImageCompressTool && isJpg && (
-                <div className="grid gap-2 pt-2">
-                  <ValueSlider
-                    label="Compression Quality"
-                    value={compressionQuality}
-                    onValueChange={setCompressionQuality}
-                    min={10}
-                    max={100}
-                    step={1}
-                    unit="%"
-                    description="Lower values result in smaller file sizes but lower quality."
-                  />
-                </div>
-              )}
-              {(isImageCompressToSizeTool || isPdfCompressTool) && files.length > 0 && (
+              {(isImageCompressToSizeTool || isPdfCompressTool || (isImageCompressTool && isJpg)) && files.length > 0 && (
                  <div className="grid gap-4 pt-2">
                     <Label>Target File Size</Label>
                     <div className="flex items-center gap-2">
@@ -1070,5 +1016,3 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
       return renderIdleState();
   }
 }
-
-    
