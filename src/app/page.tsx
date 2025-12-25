@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { tools, iconMap } from '@/lib/tools';
+import Adsense from '@/components/adsense';
 
 export default function Home() {
   return (
@@ -14,6 +15,8 @@ export default function Home() {
           of powerful online tools.
         </p>
       </section>
+
+      <Adsense />
 
       <section className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
