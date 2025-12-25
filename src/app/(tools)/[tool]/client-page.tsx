@@ -38,7 +38,6 @@ import { useFirebase } from '@/firebase';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Label } from '@/components/ui/label';
 import JSZip from 'jszip';
-import { Slider } from '@/components/ui/slider';
 import { ValueSlider } from '@/components/ui/value-slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
@@ -651,6 +650,8 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     setWatermarkFile(null);
     setCompressionQuality(70);
     setPdfCompressionLevel(2);
+    setTargetSize(100);
+    setSizeUnit('KB');
     setWatermarkOpacity(50);
     setConversionState('idle');
     setProgress(0);
@@ -876,22 +877,18 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
                  </div>
               )}
               {isPdfCompressTool && files.length > 0 && (
-                <div className="grid gap-2 pt-2">
-                    <div className="flex items-center justify-between">
-                        <Label>Compression Level</Label>
-                        <span className="text-sm font-medium">{compressionLevels[pdfCompressionLevel]}</span>
-                    </div>
-                    <Slider
-                        value={[pdfCompressionLevel]}
-                        onValueChange={(value) => setPdfCompressionLevel(value[0] as 1 | 2 | 3)}
-                        min={1}
-                        max={3}
-                        step={1}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                        Recommended offers a good balance between file size and quality.
-                    </p>
-                </div>
+                 <div className="grid gap-2 pt-2">
+                   <ValueSlider
+                    label="Compression Level"
+                    value={pdfCompressionLevel}
+                    onValueChange={(val) => setPdfCompressionLevel(val as 1 | 2 | 3)}
+                    min={1}
+                    max={3}
+                    step={1}
+                    unit=""
+                    description="Recommended offers a good balance between file size and quality."
+                  />
+                 </div>
               )}
               {isMultiFile && files.length > 0 && (
                 <Button
@@ -1054,3 +1051,5 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
       return renderIdleState();
   }
 }
+
+    

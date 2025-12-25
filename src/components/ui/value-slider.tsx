@@ -41,10 +41,21 @@ export function ValueSlider({
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = parseInt(e.target.value, 10)
+    const rawValue = e.target.value.replace(unit || '', '');
+    const newValue = parseInt(rawValue, 10);
     if (!isNaN(newValue)) {
       onValueChange(Math.max(min, Math.min(max, newValue)))
     }
+  }
+  
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+      const rawValue = e.target.value.replace(unit || '', '');
+      const newValue = parseInt(rawValue, 10);
+      if (isNaN(newValue) || newValue < min) {
+        onValueChange(min);
+      } else if (newValue > max) {
+        onValueChange(max);
+      }
   }
 
   return (
@@ -67,12 +78,7 @@ export function ValueSlider({
             className="h-8 w-14 border-0 bg-transparent p-0 text-center shadow-none focus-visible:ring-0"
             value={`${value}${unit || ''}`}
             onChange={handleInputChange}
-            onBlur={(e) => {
-              // Ensure value is within bounds when focus is lost
-              const newValue = parseInt(e.target.value, 10)
-              if (isNaN(newValue) || newValue < min) onValueChange(min)
-              if (newValue > max) onValueChange(max)
-            }}
+            onBlur={handleBlur}
           />
           <Button
             variant="ghost"
@@ -99,3 +105,5 @@ export function ValueSlider({
     </div>
   )
 }
+
+    
