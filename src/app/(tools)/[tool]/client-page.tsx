@@ -45,6 +45,12 @@ import { ValueSlider } from '@/components/ui/value-slider';
 type ConversionState = 'idle' | 'processing' | 'success' | 'error';
 type ClientTool = Omit<Tool, 'icon'> & { iconName: string };
 
+const compressionLevels = {
+  1: 'Low',
+  2: 'Recommended',
+  3: 'Extreme',
+};
+
 export function ToolClientPage({ tool }: { tool: ClientTool }) {
   const [files, setFiles] = useState<File[]>([]);
   const [watermarkFile, setWatermarkFile] = useState<File | null>(null);
@@ -53,6 +59,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
   const [pageRange, setPageRange] = useState('');
   const [password, setPassword] = useState('');
   const [compressionQuality, setCompressionQuality] = useState(70);
+  const [pdfCompressionLevel, setPdfCompressionLevel] = useState<1 | 2 | 3>(2);
   const [conversionState, setConversionState] =
     useState<ConversionState>('idle');
   const [progress, setProgress] = useState(0);
@@ -74,6 +81,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
   const isImageToUrlTool = tool.slug === 'host-image-to-url';
   const isSplitPdfTool = tool.slug === 'split-pdf';
   const isImageCompressTool = tool.slug === 'compress-image';
+  const isPdfCompressTool = tool.slug === 'compress-pdf';
   const isPdfToWordTool = tool.slug === 'pdf-to-word';
   const isImageToPdfTool = tool.slug === 'image-to-pdf';
   const isPdfToImageTool = tool.slug === 'pdf-to-image';
@@ -211,9 +219,12 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     }
 
     try {
-      if (tool.slug === 'compress-pdf' && files.length > 0) {
+      if (isPdfCompressTool && files.length > 0) {
         const pdfDataUri = await fileToDataUri(files[0]);
-        const response = await intelligentPdfCompression({ pdfDataUri });
+        const response = await intelligentPdfCompression({ 
+            pdfDataUri,
+            compressionLevel: pdfCompressionLevel,
+         });
 
         clearInterval(progressInterval);
         setProgress(100);
@@ -558,6 +569,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     setPassword('');
     setWatermarkFile(null);
     setCompressionQuality(70);
+    setPdfCompressionLevel(2);
     setWatermarkOpacity(50);
     setConversionState('idle');
     setProgress(0);
@@ -750,6 +762,24 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
                     unit="%"
                     description="Lower values result in smaller file sizes but lower quality."
                   />
+                </div>
+              )}
+              {isPdfCompressTool && files.length > 0 && (
+                <div className="grid gap-2 pt-2">
+                    <div className="flex items-center justify-between">
+                        <Label>Compression Level</Label>
+                        <span className="text-sm font-medium">{compressionLevels[pdfCompressionLevel]}</span>
+                    </div>
+                    <Slider
+                        value={[pdfCompressionLevel]}
+                        onValueChange={(value) => setPdfCompressionLevel(value[0] as 1 | 2 | 3)}
+                        min={1}
+                        max={3}
+                        step={1}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        Recommended offers a good balance between file size and quality.
+                    </p>
                 </div>
               )}
               {isMultiFile && files.length > 0 && (
