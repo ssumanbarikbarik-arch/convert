@@ -39,6 +39,7 @@ import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'fire
 import { Label } from '@/components/ui/label';
 import JSZip from 'jszip';
 import { Slider } from '@/components/ui/slider';
+import { ValueSlider } from '@/components/ui/value-slider';
 
 
 type ConversionState = 'idle' | 'processing' | 'success' | 'error';
@@ -47,11 +48,11 @@ type ClientTool = Omit<Tool, 'icon'> & { iconName: string };
 export function ToolClientPage({ tool }: { tool: ClientTool }) {
   const [files, setFiles] = useState<File[]>([]);
   const [watermarkFile, setWatermarkFile] = useState<File | null>(null);
-  const [watermarkOpacity, setWatermarkOpacity] = useState([50]);
+  const [watermarkOpacity, setWatermarkOpacity] = useState(50);
   const [url, setUrl] = useState('');
   const [pageRange, setPageRange] = useState('');
   const [password, setPassword] = useState('');
-  const [compressionQuality, setCompressionQuality] = useState([70]);
+  const [compressionQuality, setCompressionQuality] = useState(70);
   const [conversionState, setConversionState] =
     useState<ConversionState>('idle');
   const [progress, setProgress] = useState(0);
@@ -265,7 +266,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
             ctx.drawImage(image, 0, 0);
 
             // For JPG, quality can be adjusted. For PNG, it's lossless.
-            const quality = imageFile.type === 'image/jpeg' ? compressionQuality[0] / 100 : 1.0;
+            const quality = imageFile.type === 'image/jpeg' ? compressionQuality / 100 : 1.0;
             const resultDataUrl = canvas.toDataURL(imageFile.type, quality);
             URL.revokeObjectURL(imageUrl);
             resolve(resultDataUrl);
@@ -500,7 +501,7 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
                 y: height / 2 - imageHeight / 2,
                 width: imageWidth,
                 height: imageHeight,
-                opacity: watermarkOpacity[0] / 100,
+                opacity: watermarkOpacity / 100,
             });
         }
 
@@ -556,8 +557,8 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
     setPageRange('');
     setPassword('');
     setWatermarkFile(null);
-    setCompressionQuality([70]);
-    setWatermarkOpacity([50]);
+    setCompressionQuality(70);
+    setWatermarkOpacity(50);
     setConversionState('idle');
     setProgress(0);
     setError(null);
@@ -723,42 +724,32 @@ export function ToolClientPage({ tool }: { tool: ClientTool }) {
                   </div>
                   {watermarkFile && (
                      <div className="grid gap-2 pt-2">
-                        <div className="flex justify-between items-center">
-                          <Label htmlFor="opacity">Transparency</Label>
-                          <span className="text-sm font-medium text-muted-foreground">{watermarkOpacity[0]}%</span>
-                        </div>
-                        <Slider
-                          id="opacity"
+                         <ValueSlider
+                          label="Transparency"
+                          value={watermarkOpacity}
+                          onValueChange={setWatermarkOpacity}
                           min={0}
                           max={100}
                           step={1}
-                          value={watermarkOpacity}
-                          onValueChange={setWatermarkOpacity}
+                          unit="%"
+                          description="Set the transparency of the watermark. 100% is fully opaque."
                         />
-                         <p className="text-xs text-muted-foreground">
-                          Set the transparency of the watermark. 100% is fully opaque.
-                        </p>
                       </div>
                   )}
                 </div>
               )}
               {isImageCompressTool && isJpg && (
                 <div className="grid gap-2 pt-2">
-                  <div className="flex justify-between items-center">
-                    <Label htmlFor="quality">Compression Quality</Label>
-                    <span className="text-sm font-medium text-muted-foreground">{compressionQuality[0]}%</span>
-                  </div>
-                  <Slider
-                    id="quality"
-                    min={10}
-                    max={100}
-                    step={10}
+                  <ValueSlider
+                    label="Compression Quality"
                     value={compressionQuality}
                     onValueChange={setCompressionQuality}
+                    min={10}
+                    max={100}
+                    step={1}
+                    unit="%"
+                    description="Lower values result in smaller file sizes but lower quality."
                   />
-                   <p className="text-xs text-muted-foreground">
-                    Lower values result in smaller file sizes but lower quality.
-                  </p>
                 </div>
               )}
               {isMultiFile && files.length > 0 && (
