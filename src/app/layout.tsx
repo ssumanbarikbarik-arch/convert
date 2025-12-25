@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { cn } from '@/lib/utils';
-import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
@@ -39,7 +38,6 @@ export default function RootLayout({
       <body className={cn('min-h-dvh bg-background font-body antialiased')}>
         <FirebaseClientProvider>
           <div className="relative flex min-h-dvh flex-col">
-            <Header />
             <main className="flex-1">{children}</main>
             <Footer />
           </div>

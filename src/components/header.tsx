@@ -66,7 +66,11 @@ const pdfSecurityTools = tools.filter(
     tool.slug === 'protect-pdf'
 );
 
-export function Header() {
+type HeaderProps = {
+  onSearchChange?: (query: string) => void;
+};
+
+export function Header({ onSearchChange }: HeaderProps) {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const router = useRouter();
@@ -287,6 +291,7 @@ export function Header() {
               type="search"
               placeholder="Search for a tool..."
               className="pl-10 bg-muted"
+              onChange={(e) => onSearchChange?.(e.target.value)}
             />
           </div>
            {isUserLoading ? (
