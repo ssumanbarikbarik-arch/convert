@@ -286,7 +286,7 @@ export function Header() {
             <Input
               type="search"
               placeholder="Search for a tool..."
-              className="pl-10"
+              className="pl-10 bg-muted"
             />
           </div>
            {isUserLoading ? (
