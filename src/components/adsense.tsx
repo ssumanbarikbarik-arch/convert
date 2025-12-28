@@ -22,27 +22,13 @@ const Adsense = () => {
 
   return (
     <div style={{ padding: '0' }}>
-      {/* 
-                ** IMPORTANT **
-                Paste your ad unit code from AdSense here.
-                It will look something like this:
-
-                <ins className="adsbygoogle"
-                    style={{ display: 'block' }}
-                    data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-                    data-ad-slot="YYYYYYYYYY"
-                    data-ad-format="auto"
-                    data-full-width-responsive="true"></ins>
-            */}
-
-      {/* Example ad unit (replace with your own) */}
       <ins
         className="adsbygoogle"
-        style={{ display: 'block', textAlign: 'center' }}
-        data-ad-layout="in-article"
+        style={{ display: 'block' }}
         data-ad-format="fluid"
-        data-ad-client="ca-pub-9257577871235579"
-        data-ad-slot="YOUR_AD_SLOT_ID_HERE"
+        data-ad-layout-key="-gk+h-16-4w+d9"
+        data-ad-client="ca-pub-925757787123557"
+        data-ad-slot="5987878098"
       ></ins>
     </div>
   );
